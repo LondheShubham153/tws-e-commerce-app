@@ -8,7 +8,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   rules:
-  - host: "34.254.163.246.nip.io"
+  - host: easyshop.letsdeployit.com
     http:
       paths:
       - path: /

@@ -121,15 +121,4 @@ pipeline {
             }
         }
     }
-    
-    post {
-        always {
-            script {
-                archiveArtifacts artifacts: '*.xml', followSymlinks: false
-                build job: "EasyShop", parameters: [
-                string(name: 'DOCKER_TAG', value: env.DOCKER_IMAGE_TAG)
-            ]
-            }
-        }
-    }
 }

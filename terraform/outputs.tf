@@ -27,3 +27,8 @@ output "public_subnets" {
   description = "Public subnets used by the EKS cluster"
   value       = module.vpc.public_subnets
 }
+
+output "Public_IP" {
+  description = "Public IP of the EC2 instance"
+  value       = aws_instance.testinstance.public_ip
+}

@@ -6,9 +6,10 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    kubernetes.io/ingress.class: "nginx" 
 spec:
   rules:
-  - host: easyshop.letsdeployit.com
+  - host: "easyshop.letsdeployit.com"
     http:
       paths:
       - path: /

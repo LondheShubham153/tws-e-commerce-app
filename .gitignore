@@ -82,5 +82,13 @@ terraform/terra-key
 terraform/terraform.tfstate*
 terraform/.terraform.lock.hcl
 terraform/.terraform/modules/*
-
+.terraform.tfstate.lock.info
 terraform/.terraform
+.terraform.lock.hcl
+.terraform
+terraform.tfstate
+terraform.tfstate.backup
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terra-key.pub
+terra-key

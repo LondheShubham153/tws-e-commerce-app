@@ -24,7 +24,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone("https://github.com/iemafzalhassan/tws-e-commerce-app","master")
+                    clone("https://github.com/iemafzalhassan/tws-e-commerce-app.git","master")
                 }
             }
         }

@@ -1,19 +1,33 @@
-variable "aws_region" {
-  description = "AWS region where resources will be provisioned"
-  default     = "us-east-2"
-}
+locals {
 
-variable "ami_id" {
-  description = "AMI ID for the EC2 instance"
-  default     = "ami-085f9c64a9b75eed5"
-}
+  region          = "us-east-2"
+  environment     = "dev"
+  tags = {
+    Name          = "easyshop"
+    Environment   = "dev"
+    Terraform     = "true"
+  }
 
-variable "instance_type" {
-  description = "Instance type for the EC2 instance"
-  default     = "t2.medium"
-}
+  # VPC Variables
+  vpc_name        = "easyshop"
+  vpc_cidr        = "12.0.0.0/16"
+  azs             = ["us-east-2a", "us-east-2b"]
+  public_subnets  = ["12.0.1.0/24", "12.0.2.0/24"]
+  private_subnets = ["12.0.3.0/24", "12.0.4.0/24"]
+  intra_subnets   = ["12.0.5.0/24", "12.0.6.0/24"]
 
-variable "my_enviroment" {
-  description = "Instance type for the EC2 instance"
-  default     = "dev"
+  # EKS Variables
+  cluster_name    = "easyshop-cluster"
+  cluster_version = "1.29"
+  eks_addons_versions = {
+    kube-proxy         = "v1.29.0-eksbuild.1"
+    vpc-cni            = "v1.29.0-eksbuild.1"
+  }
+
+  # Security Group Variables
+  sg_name = "easyshop-sg"
+
+  # Bastion Variables
+  key_name      = "easyshop"
+  instance_type = "t3.large"
 }

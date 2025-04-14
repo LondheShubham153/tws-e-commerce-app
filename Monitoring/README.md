@@ -1,4 +1,4 @@
-## How to monitor EKS cluster, kubernetes components and workloads using prometheus and grafana via HELM (On Master machine)
+## How to monitor EKS cluster, kubernetes components and workloads using prometheus and grafana via HELM
 - <p id="Monitor">Install Helm Chart</p>
 ```bash
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3

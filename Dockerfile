@@ -5,16 +5,13 @@ FROM node:${NODE_VERSION} AS builder
 # Set working directory
 WORKDIR /app
 
+# Copy package files
+COPY package*.json ./
+
 # Install necessary build dependencies
 RUN apk add --no-cache python3 make g++ && \
     npm ci && \
     apk del python3 make g++
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
 
 # Copy all project files
 COPY . .

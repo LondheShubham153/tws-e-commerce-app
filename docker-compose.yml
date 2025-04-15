@@ -4,16 +4,26 @@ services:
   mongodb:
     image: mongo:latest
     container_name: easyshop-mongodb
+    env_file:
+      - .env.local
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD-SHELL", "echo 'db.adminCommand(\"ping\")' | mongosh --quiet"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+        reservations:
+          memory: 1G
+          cpus: "0.5"
     networks:
       - easyshop-network
 
@@ -44,7 +54,7 @@ services:
         condition: service_completed_successfully
     networks:
       - easyshop-network
-    restart: unless-stopped
+    restart: always
 
 networks:
   easyshop-network:
@@ -52,4 +62,4 @@ networks:
 
 volumes:
   mongodb_data:
-    name: mongodb_data
+    driver: local

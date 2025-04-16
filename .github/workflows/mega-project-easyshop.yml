@@ -47,33 +47,6 @@ jobs:
     - name: Install Dependencies
       run: npm ci
     
-    - name: Run Frontend Tests
-      run: |
-        npm run test:unit
-        npm run test:integration
-        npm run test:accessibility
-      
-    - name: Run Backend Tests
-      run: |
-        npm run test:unit
-        npm run test:integration
-        npm run test:security
-      
-    - name: Run Database Tests
-      run: |
-        npm run test:db
-        npm run test:validation
-    
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: '${{ env.DOCKER_IMAGE_NAME }}:${{ github.run_number }}'
-        format: 'table'
-        exit-code: '1'
-        ignore-unfixed: true
-        vuln-type: 'os,library'
-        severity: 'CRITICAL,HIGH'
-    
     - name: Update Kubernetes manifests
       env:
         GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}

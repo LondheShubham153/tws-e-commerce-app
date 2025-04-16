@@ -48,8 +48,8 @@ jobs:
       run: npm ci
     
     - name: Update Kubernetes manifests
-      env:
-        GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #env:
+        #GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Configure Git
         git config --global user.name "GitHub Actions"

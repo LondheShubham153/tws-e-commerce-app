@@ -1,5 +1,5 @@
 # Stage 1: Development/Build Stage
-ARG NODE_VERSION=18-alpine
+ARG NODE_VERSION=18-slim
 FROM node:${NODE_VERSION} AS builder
 
 # Set working directory
@@ -9,9 +9,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install necessary build dependencies
-RUN apk add --no-cache python3 make g++ && \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
     npm ci && \
-    apk del python3 make g++
+    apt-get remove -y python3 make g++ && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy all project files
 COPY . .
@@ -26,7 +29,7 @@ FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
 
 # Add a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 USER appuser
 
 # Copy necessary files from builder stage

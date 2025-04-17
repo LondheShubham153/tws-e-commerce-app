@@ -106,6 +106,9 @@ resource "helm_release" "jenkins" {
   values = [
     file("${path.module}/jenkins.yml")
   ]
+  timeout     = 600       # 10 minutes
+  wait        = true
+  atomic      = true      # Roll back if it fails
 
   depends_on = [module.eks]
 }

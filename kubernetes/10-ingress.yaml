@@ -10,7 +10,7 @@ metadata:
 spec:
   tls:
   - hosts:
-    - easyshop.letsdeployit.com
+    - easyshop.tatanexarc.ai
     secretName: easyshop-tls-secret  # Cert-Manager will manage this
   rules:
   - host: easyshop.tatanexarc.ai

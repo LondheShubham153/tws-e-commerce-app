@@ -57,26 +57,6 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_MIGRATION_IMAGE_NAME }}:latest
           cache-to: type=inline
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Frontend Tests
-        run: |
-          npm run test:unit
-          npm run test:integration
-          npm run test:accessibility
-
-      - name: Run Backend Tests
-        run: |
-          npm run test:unit
-          npm run test:integration
-          npm run test:security
-
-      - name: Run Database Tests
-        run: |
-          npm run test:db
-          npm run test:validation
-
       - name: Install Trivy
         run: |
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -

@@ -1,6 +1,8 @@
 controller:
-  adminUser: admin
-  adminPassword: admin
+  admin:
+    username: admin
+    password: admin
+
   serviceType: LoadBalancer
   resources:
     requests:

@@ -1,19 +1,20 @@
 #!/bin/bash
 
 # Update system and install core packages
-sudo apt update
+sudo apt update && sudo apt upgrade -y
 sudo apt install -y fontconfig openjdk-17-jre 
 
-# SonarQube Install
-sudo apt update && sudo apt install -y unzip
-wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-10.4.1.88267.zip
-unzip sonarqube-10.4.1.88267.zip
-sudo mv sonarqube-10.4.1.88267 /opt/sonarqube
-sudo adduser --system --no-create-home --group --disabled-login sonar
-sudo chown -R sonar:sonar /opt/sonarqube
-cd /opt/sonarqube/bin/linux-x86-64
-sudo -u sonar ./sonar.sh start
-sudo chown -R jenkins:jenkins /var/lib/jenkins
+# Jenkins installation
+sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt-get update
+sudo apt-get -y install jenkins
+
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
 
 
 # AWS CLI, Helm, Kubectl

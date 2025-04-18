@@ -10,6 +10,7 @@ pipeline {
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         GITHUB_CREDENTIALS = credentials('github-credentials')
         SONAR_TOKEN = credentials('sonarqube-credentials')
+        GIT_REPO = "https://github.com/ahamadb224/tws-e-commerce-app.git"
         GIT_BRANCH = "master"
     }
     
@@ -25,7 +26,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone("https://github.com/ahamadb224/tws-e-commerce-app.git","master")
+                    clone(url: env.GIT_REPO, branch: env.GIT_BRANCH)
                 }
             }
         }

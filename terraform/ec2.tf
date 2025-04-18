@@ -1,5 +1,3 @@
-# ec2.tf
-
 resource "aws_key_pair" "deployer" {
   key_name   = "terra-automate-key"
   public_key = file("terra-key.pub")
@@ -134,4 +132,5 @@ data "aws_ami" "os_image" {
     values = ["ubuntu/images/hvm-ssd-gp3/*24.04-amd64*"]
   }
 }
+
 

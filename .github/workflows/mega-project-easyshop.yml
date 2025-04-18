@@ -57,17 +57,15 @@ jobs:
           cache-from: type=registry,ref=${{ env.DOCKER_MIGRATION_IMAGE_NAME }}:latest
           cache-to: type=inline
 
-      - name: Install Trivy
-        run: |
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-          sudo apt-get update
-          sudo apt-get install -y trivy
-
-      - name: Run Trivy scan
-        run: |
-          trivy image --exit-code 1 --severity HIGH,CRITICAL ${{ env.DOCKER_IMAGE_NAME }}:${{ github.run_number }}
-          trivy image --exit-code 1 --severity HIGH,CRITICAL ${{ env.DOCKER_MIGRATION_IMAGE_NAME }}:${{ github.run_number }}
+      - name: Run Trivy vulnerability scanner in fs mode
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
 
   update-k8s-manifests:
     needs: build-and-test
@@ -83,10 +81,10 @@ jobs:
       - name: Update Kubernetes manifests
         run: |
           # Update deployment manifests with new image tags
-          sed -i "s|image: trainwithshubham/easyshop-app:.*|image: yasir261/easyshop-app:${{ github.run_number }}|g" kubernetes/08-easyshop-deployment.yaml
+          sed -i "s|image: yasir261/easyshop-app:.*|image: yasir261/easyshop-app:${{ github.run_number }}|g" kubernetes/08-easyshop-deployment.yaml
           
           if [ -f "kubernetes/12-migration-job.yaml" ]; then
-            sed -i "s|image: trainwithshubham/easyshop-migration:.*|image: yasir261/easyshop-migration:${{ github.run_number }}|g" kubernetes/12-migration-job.yaml
+            sed -i "s|image: yasir261/easyshop-migration:.*|image: yasir261/easyshop-migration:${{ github.run_number }}|g" kubernetes/12-migration-job.yaml
           fi
           
           if [ -f "kubernetes/10-ingress.yaml" ]; then

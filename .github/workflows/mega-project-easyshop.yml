@@ -56,6 +56,23 @@ jobs:
         cache-from: type=registry,ref=${{ env.DOCKER_MIGRATION_IMAGE_NAME }}:latest
         cache-to: type=inline
 
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      with:
+        args: >
+          -Dsonar.projectKey=tws-e-commerce-app
+          -Dsonar.projectName='TWS E-Commerce App'
+          -Dsonar.projectVersion=${{ github.sha }}
+          
+    - name: SonarQube Quality Gate check
+      uses: sonarsource/sonarqube-quality-gate-action@master
+      timeout-minutes: 5
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    
     - name: Run Trivy vulnerability scanner in fs mode
       uses: aquasecurity/trivy-action@master
       with:

@@ -26,7 +26,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone(url: env.GIT_REPO, branch: env.GIT_BRANCH)
+                    clone("https://github.com/ahamadb224/tws-e-commerce-app.git", "master")
                 }
             }
         }

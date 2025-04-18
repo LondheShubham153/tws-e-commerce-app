@@ -72,6 +72,7 @@ jobs:
           -Dsonar.sources=.
           -Dsonar.exclusions=node_modules/**
           -Dsonar.sourceEncoding=UTF-8
+          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

@@ -56,9 +56,10 @@ jobs:
         cache-from: type=registry,ref=${{ env.DOCKER_MIGRATION_IMAGE_NAME }}:latest
         cache-to: type=inline
 
-    - name: Build
-      runs-on: ubuntu-latest
-      steps:
+  SonarQube-scan-and-quality:
+    runs-on: ubuntu-latest
+    steps:
+    - name: SonarQube scan
       uses: actions/checkout@v2
       with:
         fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis

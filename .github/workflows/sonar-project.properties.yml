@@ -65,6 +65,12 @@ jobs:
         fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
     - name: SonarQube Quality Gate check
       uses: sonarsource/sonarqube-scan-action@master
+      args: >
+          -Dsonar.projectKey=tws-e-commerce-app
+          -Dsonar.projectName="tws-e-commerce-app"
+          -Dsonar.sources=.
+          -Dsonar.exclusions=node_modules/**
+          -Dsonar.sourceEncoding=UTF-8
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

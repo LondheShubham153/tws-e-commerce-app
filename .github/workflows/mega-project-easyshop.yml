@@ -43,7 +43,7 @@ jobs:
           ${{ env.DOCKER_IMAGE_NAME }}:latest
         cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:latest
         cache-to: type=inline
-
+        
     - name: Build and push migration image
       uses: docker/build-push-action@v5
       with:
@@ -57,8 +57,8 @@ jobs:
         cache-to: type=inline
 
     - name: Build
-    runs-on: ubuntu-latest
-    steps:
+      runs-on: ubuntu-latest
+      steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis

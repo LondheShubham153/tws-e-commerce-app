@@ -9,6 +9,7 @@ pipeline {
         DOCKER_MIGRATION_IMAGE_NAME = 'ahamadb224/easyshop-migration'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         GITHUB_CREDENTIALS = credentials('github-credentials')
+        SONAR_TOKEN = credentials('sonarqube-credentials')
         GIT_BRANCH = "master"
     }
     
@@ -25,6 +26,21 @@ pipeline {
             steps {
                 script {
                     clone("https://github.com/ahamadb224/tws-e-commerce-app.git","master")
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube Server') { // Name must match Jenkins > "Configure System"
+                    withCredentials([string(credentialsId: 'sonarqube-credentials', variable: 'SONAR_TOKEN')]){
+                        sh '''
+                          sonar-scanner \
+                            -Dsonar.projectKey=easyshop-app \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://34.224.213.239:9000 \
+                        '''
+                    }
                 }
             }
         }

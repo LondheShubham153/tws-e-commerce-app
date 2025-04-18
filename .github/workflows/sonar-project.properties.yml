@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -122,4 +122,55 @@ jobs:
             git push
           else
             echo "No changes to commit"
-          fi
+
+  deploy-to-kind:
+    needs: [build-and-test, update-k8s-manifests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Kind Cluster
+        run: |
+          kind create cluster --name easyshop || true
+          kubectl cluster-info
+
+      - name: Set up Docker credentials in Kind
+        run: |
+          kubectl create secret docker-registry regcred \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
+            --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
+            --docker-email=${{ secrets.DOCKERHUB_EMAIL }} \
+            -n easyshop || true
+
+      - name: Deploy to Kind
+        run: |
+          # Create namespace if it doesn't exist
+          kubectl create namespace easyshop || true
+          
+          # Apply Kubernetes manifests
+          kubectl apply -f kubernetes/00-cluster-issuer.yml
+          kubectl apply -f kubernetes/01-namespace.yaml
+          kubectl apply -f kubernetes/02-mongodb-pv.yaml
+          kubectl apply -f kubernetes/03-mongodb-pvc.yaml
+          kubectl apply -f kubernetes/04-configmap.yaml
+          kubectl apply -f kubernetes/05-secrets.yaml
+          kubectl apply -f kubernetes/06-mongodb-service.yaml
+          kubectl apply -f kubernetes/07-mongodb-statefulset.yaml
+          kubectl apply -f kubernetes/08-easyshop-deployment.yaml
+          kubectl apply -f kubernetes/09-easyshop-service.yaml
+          kubectl apply -f kubernetes/10-ingress.yaml
+          kubectl apply -f kubernetes/11-hpa.yaml
+          kubectl apply -f kubernetes/12-migration-job.yaml
+          
+          # Wait for deployment to be ready
+          kubectl rollout status deployment/easyshop -n easyshop --timeout=300s
+
+      - name: Verify Deployment
+        run: |
+          kubectl get pods -n easyshop
+          kubectl get svc -n easyshop
+          echo "Application deployed successfully to Kind cluster"

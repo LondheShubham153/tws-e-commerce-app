@@ -1,0 +1,15 @@
+---
+# This file defines an Internet Gateway resource in AWS using Crossplane.
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: InternetGateway
+metadata:
+  name: easyshop-igw
+spec:
+  forProvider:
+    region: eu-west-1
+    vpcIdRef:
+      name: easyshop-vpc
+    tags:
+      Name: easyshop-igw
+  providerConfigRef:
+    name:  default

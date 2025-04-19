@@ -1,0 +1,36 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+{{- if .Values.ingress.enabled }}
+Your application can be accessed at:
+{{- if .Values.ingress.tls.enabled }}
+  https://{{ .Values.ingress.host }}
+{{- else }}
+  http://{{ .Values.ingress.host }}
+{{- end }}
+{{- else }}
+Get the application URL by running these commands:
+{{- if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Values.app.namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ .Values.app.name }}-service)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Values.app.namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch the status of by running 'kubectl get --namespace {{ .Values.app.namespace }} svc -w {{ .Values.app.name }}-service'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Values.app.namespace }} {{ .Values.app.name }}-service --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- end }}
+{{- end }}
+
+To check the application logs:
+  kubectl logs -f -l app={{ .Values.app.name }} -n {{ .Values.app.namespace }}
+
+To check MongoDB status:
+  kubectl get statefulset mongodb -n {{ .Values.app.namespace }}
+  kubectl logs -f -l app=mongodb -n {{ .Values.app.namespace }}

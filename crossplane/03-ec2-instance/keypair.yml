@@ -1,0 +1,11 @@
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: KeyPair
+metadata:
+  annotations:
+    upjet.upbound.io/manual-intervention: Requires a valid public key.
+  name: crossplane-keypair
+  namespace: crossplane-system
+spec:
+  forProvider:
+    publicKey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCqgLcUDuezTVX/g6gid21z12AOnHsAL1xMnrAm9CCyRVUHiQz8SpoqoPPHwPfhQw6KQGrW+CeojLrieUYD6KmKf0ohhsdf4cvVKFzzOtkEMJ4itWx8OKB/zqkhPgSUK1aHPYTq3cglaPcZe5ytcDJBWuUBtI09QxRr7vIx6/d/rT7YsVQFLpdvbt5Od3NDvPMpLV2jcvaUGaaYWK2qXeFjHCgWiD4dPLy0zUIqcLqg2CnOofCpNMg447+kWpTUsz0CG0ZLTwAe2YFT/NnngKeLt/QDCCk+T86CRtxbLxmlAgcfDcAMTBLBReJvKXFNWLvEl/p/epOwyfra9sTPL3rJ yasir@devops
+    region: eu-west-1

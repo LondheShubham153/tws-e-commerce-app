@@ -1,0 +1,91 @@
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: RouteTable
+metadata:
+  name: easyshop-public-rt
+spec:
+  forProvider:
+    region: eu-west-1
+    cidrBlock: 0.0.0.0/0
+    vpcIdRef:
+      name: easyshop-vpc
+    tags:
+      Name: easyshop-public-rt
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: RouteTable
+metadata:
+  name: easyshop-private-rt
+spec:
+  forProvider:
+    region: eu-west-1
+    cidrBlock: 0.0.0.0/0
+    vpcIdRef:
+      name: easyshop-vpc
+    tags:
+      Name: easyshop-private-rt
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: Route
+metadata:
+  name: easyshop-public-rt-igw-route
+spec:
+  forProvider:
+    region: eu-west-1
+    routeTableIdRef:
+      name: easyshop-public-rt
+    destinationCidrBlock: 0.0.0.0/0
+    gatewayIdRef:
+      name: easyshop-igw
+  providerConfigRef:
+    name: default
+---
+
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: Route
+metadata:
+  name: easyshop-private-route
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    routeTableIdRef:
+      name: easyshop-private-rt
+    destinationCidrBlock: 0.0.0.0/0
+    natGatewayIdRef:
+      name: easyshop-nat-gw  # Reference to the NAT Gateway
+  providerConfigRef:
+    name: default
+
+
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: RouteTableAssociation
+metadata:
+  name: easyshop-public-subnet-route-association
+spec:
+  forProvider:
+    region: eu-west-1
+    subnetIdRef:
+      name: easyshop-public-subnet
+    routeTableIdRef:
+      name: easyshop-public-rt
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: RouteTableAssociation
+metadata:
+  name: easyshop-private-subnet-route-association
+spec:
+  forProvider:
+    region: eu-west-1
+    subnetIdRef:
+      name: easyshop-private-subnet
+    routeTableIdRef:
+      name: easyshop-private-rt
+  providerConfigRef:
+    name: default

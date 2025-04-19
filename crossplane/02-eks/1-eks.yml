@@ -1,0 +1,23 @@
+---
+apiVersion: eks.aws.upbound.io/v1beta2
+kind: Cluster
+metadata:
+  name: easyshop-eks-cluster
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    version: "1.28"
+    roleArnRef:
+      name: easyshop-eks-cluster-role
+    vpcConfig:
+      endpointPrivateAccess: false
+      endpointPublicAccess: true
+      subnetIdRefs:
+        - name: easyshop-private-subnet
+        - name: easyshop-public-subnet
+      securityGroupIdRefs:
+        - name: easyshop-sg
+  providerConfigRef:
+    name: default
+

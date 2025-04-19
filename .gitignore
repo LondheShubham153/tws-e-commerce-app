@@ -93,3 +93,9 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terra-key.pub
 terra-key
+kubernetes/
+terraform/
+crossplane-keypair.pub
+crossplane-keypair
+aws-credentials.txt
+Jenkinsfile

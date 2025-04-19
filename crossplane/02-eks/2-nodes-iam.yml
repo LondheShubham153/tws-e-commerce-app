@@ -1,0 +1,47 @@
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Role
+metadata:
+  name: eks-node-role
+spec:
+  forProvider:
+    assumeRolePolicy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Principal": {
+              "Service": "ec2.amazonaws.com"
+            }
+          }
+        ]
+      }
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: eks-node-role-amazon-eks-worker-node-policy
+spec:
+  forProvider:
+    role: eks-node-role
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: eks-node-role-amazon-eks-cni-policy
+spec:
+  forProvider:
+    role: eks-node-role
+    policyArn: arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: eks-node-role-amazon-ec2-container-registry-read-only
+spec:
+  forProvider:
+    role: eks-node-role
+    policyArn: arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly

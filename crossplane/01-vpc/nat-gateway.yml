@@ -1,0 +1,36 @@
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: EIP
+metadata:
+  name: easyshop-eip
+  labels:
+    name: easyshop-eip
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    vpc: true
+    tags:
+      Name: easyshop-eip
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: NATGateway
+metadata:
+  name: easyshop-nat-gw
+  labels:
+    name: easyshop-nat-gw
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    connectivityType: public
+    allocationIdRef:
+      name: easyshop-eip
+    subnetIdRef:
+      name: easyshop-public-subnet  # This should be a public subnet
+    tags:
+      Name: easyshop-nat-gw
+  providerConfigRef:
+    name: default

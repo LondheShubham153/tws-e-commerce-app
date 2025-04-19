@@ -1,0 +1,38 @@
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: Subnet
+metadata:
+  name: easyshop-public-subnet
+  namespace: crossplane-system
+  labels:
+    testing.upbound.io/example-name: easyshop-public-subnet
+spec:
+  forProvider:
+    region: eu-west-1
+    availabilityZone: eu-west-1a
+    cidrBlock: 10.0.1.0/24
+    vpcIdRef:
+      name: easyshop-vpc
+    mapPublicIpOnLaunch: true
+    tags:
+      Name: easyshop-public-subnet
+      kubernetes.io/role/elb: "1"
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: Subnet
+metadata:
+  name: easyshop-private-subnet
+spec:
+  forProvider:
+    region: eu-west-1
+    availabilityZone: eu-west-1b
+    cidrBlock: 10.0.2.0/24
+    vpcIdRef:
+      name: easyshop-vpc
+    tags:
+      Name: easyshop-private-subnet
+      kubernetes.io/role/internal-elb: "1"
+  providerConfigRef:
+    name: default

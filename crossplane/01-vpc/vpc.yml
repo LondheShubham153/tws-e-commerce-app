@@ -1,0 +1,272 @@
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: VPC
+metadata:
+  name: easyshop-vpc
+  namespace: crossplane-system
+  labels:
+    testing.upbound.io/example-name: easyshop-vpc
+spec:
+  forProvider:
+    region: eu-west-1
+    cidrBlock: 10.0.0.0/16
+    enableDnsSupport: true
+    enableDnsHostnames: true
+    tags:
+      Name: easyshop-vpc
+  providerConfigRef:
+    name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: VPC
+# metadata:
+#   name: easyshop-vpc
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     cidrBlock: 10.0.0.0/16
+#     tags:
+#       Name: easyshop-vpc
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: Subnet
+# metadata:
+#   name: easyshop-public-eu-west-1a
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     availabilityZone: eu-west-1a
+#     cidrBlock: 10.0.1.0/24
+#     region: eu-west-1
+#     tags:
+#       Name: easyshop-public-eu-west-1a
+#     vpcIdRef:
+#       name: easyshop-vpc
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: Subnet
+# metadata:
+#   name: easyshop-public-eu-west-1b
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     availabilityZone: eu-west-1b
+#     cidrBlock: 10.0.2.0/24
+#     region: eu-west-1
+#     tags:
+#       Name: easyshop-public-eu-west-1b
+#     vpcIdRef:
+#       name: easyshop-vpc
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: Subnet
+# metadata:
+#   name: easyshop-private-eu-west-1a
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     availabilityZone: eu-west-1a
+#     cidrBlock: 10.0.3.0/24
+#     region: eu-west-1
+#     tags:
+#       Name: easyshop-private-eu-west-1a
+#     vpcIdRef:
+#       name: easyshop-vpc
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: Subnet
+# metadata:
+#   name: easyshop-private-eu-west-1b
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     availabilityZone: eu-west-1b
+#     cidrBlock: 10.0.4.0/24
+#     region: eu-west-1
+#     tags:
+#       Name: easyshop-private-eu-west-1b
+#     vpcIdRef:
+#       name: easyshop-vpc
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: InternetGateway
+# metadata:
+#   name: easyshop-igw
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     tags:
+#       Name: easyshop-igw
+#     vpcIdRef:
+#       name: easyshop-vpc
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: EIP
+# metadata:
+#   name: easyshop-nat-eip
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: NATGateway
+# metadata:
+#   name: easyshop-natgw
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     allocationIdRef:
+#       name: easyshop-nat-eip
+#     subnetIdSelector:
+#       matchLabels:
+#         testing.upbound.io/example-name: easyshop-public-eu-west-1a
+#     vpcIdRef:
+#       name: easyshop-vpc
+#     tags:
+#       Name: easyshop-natgw
+#   providerConfigRef:
+#     name: default
+---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: RouteTable
+# metadata:
+#   name: easyshop-public-rt
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     vpcIdRef:
+#       name: easyshop-vpc
+#     tags:
+#       Name: easyshop-public-rt
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: RouteTable
+# metadata:
+#   name: easyshop-private-rt
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     vpcIdRef:
+#       name: easyshop-vpc
+#     tags:
+#       Name: easyshop-private-rt
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: Route
+# metadata:
+#   name: easyshop-public-route
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     destinationCidrBlock: 0.0.0.0/0
+#     gatewayIdRef:
+#       name: easyshop-igw
+#     routeTableIdRef:
+#       name: easyshop-public-rt
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: Route
+# metadata:
+#   name: easyshop-private-route
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     destinationCidrBlock: 0.0.0.0/0
+#     natGatewayIdRef:
+#       name: easyshop-natgw
+#     routeTableIdRef:
+#       name: easyshop-private-rt
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: RouteTableAssociation
+# metadata:
+#   name: easyshop-public-rt-assoc-a
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     routeTableIdRef:
+#       name: easyshop-public-rt
+#     subnetIdSelector:
+#       matchLabels:
+#         testing.upbound.io/example-name: easyshop-public-eu-west-1a
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: RouteTableAssociation
+# metadata:
+#   name: easyshop-public-rt-assoc-b
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     routeTableIdRef:
+#       name: easyshop-public-rt
+#     subnetIdSelector:
+#       matchLabels:
+#         testing.upbound.io/example-name: easyshop-public-eu-west-1b
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: RouteTableAssociation
+# metadata:
+#   name: easyshop-private-rt-assoc-a
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     routeTableIdRef:
+#       name: easyshop-private-rt
+#     subnetIdSelector:
+#       matchLabels:
+#         testing.upbound.io/example-name: easyshop-private-eu-west-1a
+#   providerConfigRef:
+#     name: default
+# ---
+# apiVersion: ec2.aws.upbound.io/v1beta1
+# kind: RouteTableAssociation
+# metadata:
+#   name: easyshop-private-rt-assoc-b
+#   namespace: crossplane-system
+# spec:
+#   forProvider:
+#     region: eu-west-1
+#     routeTableIdRef:
+#       name: easyshop-private-rt
+#     subnetIdSelector:
+#       matchLabels:
+#         testing.upbound.io/example-name: easyshop-private-eu-west-1b
+#   providerConfigRef:
+#     name: default

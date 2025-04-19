@@ -1,0 +1,122 @@
+namespace: easyshop
+
+# Common Labels
+labels:
+  environment: production
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  host: easyshop.letsdeployit.com
+  tls:
+    enabled: true
+    secretName: easyshop-tls-secret
+
+# Application Configuration
+app:
+  name: easyshop
+  namespace: easyshop
+  replicas: 2
+  image:
+    repository: yasir261/easyshop-app
+    tag: "14"
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  probes:
+    startup:
+      path: /
+      port: 3000
+      failureThreshold: 30
+      periodSeconds: 10
+    readiness:
+      path: /
+      port: 3000
+      initialDelaySeconds: 20
+      periodSeconds: 15
+    liveness:
+      path: /
+      port: 3000
+      initialDelaySeconds: 25
+      periodSeconds: 20
+  service:
+    type: NodePort
+    port: 80
+    targetPort: 3000
+    nodePort: 30000
+
+# MongoDB Configuration
+mongodb:
+  enabled: true
+  replicas: 1
+  image:
+    repository: mongo
+    tag: latest
+    pullPolicy: Always
+  auth:
+    enabled: true
+    rootPassword: "your-root-password"
+    rootUsername: "root"
+  persistence:
+    size: 5Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  service:
+    port: 27017
+    targetPort: 27017
+
+# Application Config
+config:
+  mongodb:
+    uri: "mongodb://mongodb-service:27017/easyshop"
+  nextauth:
+    url: "https://easyshop.letsdeployit.com/"
+    secret: "HmaFjYZ2jbUK7Ef+wZrBiJei4ZNGBAJ5IdiOGAyQegw="
+  jwt:
+    secret: "e5e425764a34a2117ec2028bd53d6f1388e7b90aeae9fa7735f2469ea3a6cc8c"
+  env: production
+  apiUrl:
+  nodeEnv: "production"
+  publicApiUrl: "https://easyshop.letsdeployit.com/api"
+  nextAuthUrl: "https://easyshop.letsdeployit.com/"
+
+# HPA Configuration
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+# Migration Job
+migration:
+  enabled: true
+  image:
+    repository: yasir261/easyshop-migration
+    tag: "14"
+    pullPolicy: Always
+
+# Cert Manager
+certManager:
+  enabled: true # Set to true if cert-manager needs to be installed as a dependenc
+
+# Secrets (should be overridden in production)
+secrets:
+  jwtSecret: "change-this-in-production"
+  nextAuthSecret: "change-this-in-production"

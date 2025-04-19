@@ -63,8 +63,7 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                     sh 'npm install --legacy-peer-deps'
-                     sh 'npm test'
+                     run_tests()
                 }
             }
         }

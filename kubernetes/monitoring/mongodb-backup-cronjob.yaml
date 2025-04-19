@@ -1,0 +1,121 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+  namespace: easyshop-prod
+spec:
+  schedule: "0 1 * * *"  # Run daily at 1:00 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: mongodb-backup-sa
+          containers:
+          - name: mongodb-backup
+            image: mongo:4.4
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-backup-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-backup-credentials
+                  key: secret-key
+            - name: BACKUP_BUCKET
+              value: "easyshop-mongodb-backups"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-backup-secret
+                  key: mongo-uri
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Install AWS CLI
+              apk add --no-cache aws-cli
+
+              # Create backup timestamp
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              BACKUP_NAME="mongodb-backup-${TIMESTAMP}"
+              
+              # Create backup directory
+              mkdir -p /backup/${BACKUP_NAME}
+              
+              # Run the backup
+              echo "Starting MongoDB backup..."
+              mongodump --uri="${MONGO_URI}" --out=/backup/${BACKUP_NAME}
+              
+              if [ $? -eq 0 ]; then
+                echo "MongoDB dump completed successfully."
+                
+                # Compress the backup
+                cd /backup
+                tar czf ${BACKUP_NAME}.tar.gz ${BACKUP_NAME}
+                
+                # Upload to S3
+                echo "Uploading to S3..."
+                aws s3 cp ${BACKUP_NAME}.tar.gz s3://${BACKUP_BUCKET}/
+                
+                if [ $? -eq 0 ]; then
+                  echo "Backup successfully uploaded to S3."
+                  # Cleanup
+                  rm -rf /backup/${BACKUP_NAME}
+                  rm -f /backup/${BACKUP_NAME}.tar.gz
+                else
+                  echo "Failed to upload backup to S3."
+                  exit 1
+                fi
+              else
+                echo "MongoDB dump failed."
+                exit 1
+              fi
+            volumeMounts:
+            - name: backup-volume
+              mountPath: /backup
+          volumes:
+          - name: backup-volume
+            emptyDir:
+              sizeLimit: 5Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mongodb-backup-sa
+  namespace: easyshop-prod
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mongodb-backup-role
+  namespace: easyshop-prod
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mongodb-backup-rolebinding
+  namespace: easyshop-prod
+subjects:
+- kind: ServiceAccount
+  name: mongodb-backup-sa
+  namespace: easyshop-prod
+roleRef:
+  kind: Role
+  name: mongodb-backup-role
+  apiGroup: rbac.authorization.k8s.io 

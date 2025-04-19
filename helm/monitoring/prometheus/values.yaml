@@ -1,0 +1,282 @@
+## Prometheus Helm Values
+# This file configures the Prometheus instance for EasyShop application metrics
+
+# Prometheus server configuration
+server:
+  image:
+    repository: quay.io/prometheus/prometheus
+    tag: v2.46.0
+    pullPolicy: IfNotPresent
+  
+  # Pod-level configuration
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+  
+  # Persistence for Prometheus data
+  persistentVolume:
+    enabled: true
+    size: 20Gi
+    storageClass: ebs-sc
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 200m
+      memory: 1Gi
+  
+  # Retention configuration
+  retention: "15d"
+  retentionSize: "10GB"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 9090
+  
+  # Prometheus rules for alerting
+  alerting:
+    rules:
+      - name: Kubernetes
+        rules:
+          - alert: HighCPUUsage
+            expr: sum(rate(container_cpu_usage_seconds_total{namespace="easyshop"}[5m])) by (pod) > 0.8
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage detected"
+              description: "Pod {{ $labels.pod }} is using high CPU (> 80%) for more than 10 minutes."
+          
+          - alert: HighMemoryUsage
+            expr: sum(container_memory_usage_bytes{namespace="easyshop"}) by (pod) / sum(container_spec_memory_limit_bytes{namespace="easyshop"}) by (pod) > 0.8
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage detected"
+              description: "Pod {{ $labels.pod }} is using high memory (> 80%) for more than 10 minutes."
+          
+          - alert: ContainerRestarting
+            expr: rate(kube_pod_container_status_restarts_total{namespace="easyshop"}[15m]) > 0
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Container is restarting frequently"
+              description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is restarting frequently."
+      
+      - name: Application
+        rules:
+          - alert: APIHighLatency
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="easyshop-backend"}[5m])) by (le)) > 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "API high latency"
+              description: "95th percentile of request latency is above 1 second for 5 minutes."
+          
+          - alert: HighErrorRate
+            expr: sum(rate(http_requests_total{job="easyshop-backend", status=~"5.."}[5m])) / sum(rate(http_requests_total{job="easyshop-backend"}[5m])) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "High error rate detected"
+              description: "Error rate is above 5% for 5 minutes."
+
+# Configuration for Prometheus Alertmanager
+alertmanager:
+  enabled: true
+  
+  # Image configuration
+  image:
+    repository: quay.io/prometheus/alertmanager
+    tag: v0.26.0
+    pullPolicy: IfNotPresent
+  
+  # Alertmanager configuration
+  config:
+    global:
+      resolve_timeout: 5m
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alertmanager@easyshop.com'
+      smtp_auth_username: 'alertmanager@easyshop.com'
+      smtp_auth_password: '{{ .Values.alertmanager.smtp.password }}'
+      smtp_require_tls: true
+    
+    route:
+      group_by: ['job', 'alertname', 'severity']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'operations-team'
+      routes:
+        - match:
+            severity: critical
+          receiver: 'operations-team'
+        - match:
+            severity: warning
+          receiver: 'dev-team'
+    
+    receivers:
+      - name: 'operations-team'
+        email_configs:
+          - to: 'ops@easyshop.com'
+            send_resolved: true
+      
+      - name: 'dev-team'
+        email_configs:
+          - to: 'developers@easyshop.com'
+            send_resolved: true
+  
+  # Persistence for Alertmanager data
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+    storageClass: ebs-sc
+
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+# Configuration for kube-state-metrics
+kubeStateMetrics:
+  enabled: true
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Configuration for node-exporter
+nodeExporter:
+  enabled: true
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# RBAC and ServiceAccount configuration
+rbac:
+  create: true
+
+serviceAccounts:
+  alertmanager:
+    create: true
+    name: prometheus-alertmanager
+  server:
+    create: true
+    name: prometheus-server
+  nodeExporter:
+    create: true
+    name: prometheus-node-exporter
+  kubeStateMetrics:
+    create: true
+    name: prometheus-kube-state-metrics
+
+# Scrape configurations
+scrape_configs:
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  - job_name: 'kubernetes-nodes'
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+  - job_name: 'easyshop-backend'
+    kubernetes_sd_configs:
+      - role: service
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_app]
+        regex: easyshop-backend
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+
+  - job_name: 'easyshop-frontend'
+    kubernetes_sd_configs:
+      - role: service
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_label_app]
+        regex: easyshop-frontend
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+
+# Security contexts
+securityContext:
+  runAsUser: 65534
+  runAsNonRoot: true
+  runAsGroup: 65534
+  fsGroup: 65534 

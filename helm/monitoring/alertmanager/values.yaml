@@ -1,0 +1,245 @@
+## Alertmanager Helm Values
+# This file configures the Alertmanager instance for EasyShop application monitoring
+
+# Image configuration
+image:
+  repository: quay.io/prometheus/alertmanager
+  tag: v0.25.0
+  pullPolicy: IfNotPresent
+
+# Service configuration  
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 9093
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9093"
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: 2Gi
+  storageClassName: ebs-sc
+  accessModes:
+    - ReadWriteOnce
+
+# Resource configuration
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Alertmanager configuration
+config:
+  global:
+    resolve_timeout: 5m
+    smtp_smarthost: 'smtp.example.com:587'
+    smtp_from: 'alertmanager@easyshop.example.com'
+    smtp_auth_username: 'alertmanager@easyshop.example.com'
+    smtp_auth_password: 'EasyShopAlerts!123'
+    smtp_require_tls: true
+
+  templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+  route:
+    group_by: ['alertname', 'job', 'severity']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    receiver: 'ops-team'
+    routes:
+      - match:
+          severity: critical
+        receiver: 'ops-team'
+        continue: true
+      - match:
+          severity: warning
+        receiver: 'dev-team'
+        continue: true
+      - match_re:
+          service: ^easyshop-.*$
+        receiver: 'dev-team'
+
+  receivers:
+    - name: 'ops-team'
+      email_configs:
+        - to: 'ops@easyshop.example.com'
+          send_resolved: true
+          html: '{{ template "email.ops.html" . }}'
+          headers:
+            subject: '[ALERT:{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+    
+    - name: 'dev-team'
+      email_configs:
+        - to: 'dev@easyshop.example.com'
+          send_resolved: true
+          html: '{{ template "email.dev.html" . }}'
+          headers:
+            subject: '[ALERT:{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+
+# Template files for notifications
+templateFiles:
+  email.ops.html: |-
+    {{ define "email.ops.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>{{ .GroupLabels.alertname }}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+        h1 { font-size: 24px; margin: 0 0 20px; color: #d9534f; }
+        h2 { font-size: 20px; margin: 0 0 15px; color: #333; }
+        h3 { font-size: 16px; margin: 0 0 10px; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-firing { background-color: #f2dede; border-color: #ebccd1; color: #a94442; }
+        .alert-resolved { background-color: #dff0d8; border-color: #d6e9c6; color: #3c763d; }
+        .details { margin: 10px 0; }
+        .details div { margin: 5px 0; }
+        .details span { font-weight: bold; }
+        .labels, .annotations { margin: 10px 0; }
+        .label { display: inline-block; padding: 3px 5px; margin: 2px; border-radius: 3px; background-color: #f5f5f5; }
+      </style>
+    </head>
+    <body>
+      <h1>{{ .GroupLabels.alertname }}</h1>
+      <div class="details">
+        <div><span>Status:</span> {{ .Status | toUpper }}</div>
+        <div><span>Severity:</span> {{ .CommonLabels.severity }}</div>
+        <div><span>Cluster:</span> {{ .CommonLabels.cluster }}</div>
+        <div><span>Environment:</span> {{ .CommonLabels.environment }}</div>
+      </div>
+      
+      <h2>Alerts</h2>
+      {{ range .Alerts }}
+      <div class="alert {{ if eq .Status "firing" }}alert-firing{{ else }}alert-resolved{{ end }}">
+        <h3>{{ .Labels.alertname }}</h3>
+        <div class="details">
+          <div><span>Status:</span> {{ .Status }}</div>
+          <div><span>Started:</span> {{ .StartsAt }}</div>
+          {{ if .EndsAt }}
+          <div><span>Ended:</span> {{ .EndsAt }}</div>
+          {{ end }}
+        </div>
+        
+        <div class="annotations">
+          {{ range .Annotations.SortedPairs }}
+          <div><span>{{ .Name }}:</span> {{ .Value }}</div>
+          {{ end }}
+        </div>
+        
+        <div class="labels">
+          {{ range .Labels.SortedPairs }}
+          <span class="label">{{ .Name }}: {{ .Value }}</span>
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+    </body>
+    </html>
+    {{ end }}
+
+  email.dev.html: |-
+    {{ define "email.dev.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>{{ .GroupLabels.alertname }}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+        h1 { font-size: 24px; margin: 0 0 20px; color: #d9534f; }
+        h2 { font-size: 20px; margin: 0 0 15px; color: #333; }
+        h3 { font-size: 16px; margin: 0 0 10px; }
+        pre { background-color: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; }
+        .alert-firing { background-color: #f2dede; border-color: #ebccd1; color: #a94442; }
+        .alert-resolved { background-color: #dff0d8; border-color: #d6e9c6; color: #3c763d; }
+        .details { margin: 10px 0; }
+        .details div { margin: 5px 0; }
+        .details span { font-weight: bold; }
+        .labels, .annotations { margin: 10px 0; }
+        .label { display: inline-block; padding: 3px 5px; margin: 2px; border-radius: 3px; background-color: #f5f5f5; }
+      </style>
+    </head>
+    <body>
+      <h1>{{ .GroupLabels.alertname }}</h1>
+      <div class="details">
+        <div><span>Status:</span> {{ .Status | toUpper }}</div>
+        <div><span>Severity:</span> {{ .CommonLabels.severity }}</div>
+        <div><span>Service:</span> {{ .CommonLabels.service }}</div>
+        <div><span>Environment:</span> {{ .CommonLabels.environment }}</div>
+      </div>
+      
+      <h2>Alerts</h2>
+      {{ range .Alerts }}
+      <div class="alert {{ if eq .Status "firing" }}alert-firing{{ else }}alert-resolved{{ end }}">
+        <h3>{{ .Labels.alertname }}</h3>
+        <div class="details">
+          <div><span>Status:</span> {{ .Status }}</div>
+          <div><span>Started:</span> {{ .StartsAt }}</div>
+          {{ if .EndsAt }}
+          <div><span>Ended:</span> {{ .EndsAt }}</div>
+          {{ end }}
+        </div>
+        
+        <div class="annotations">
+          {{ range .Annotations.SortedPairs }}
+          <div><span>{{ .Name }}:</span> {{ .Value }}</div>
+          {{ end }}
+        </div>
+        
+        <div class="labels">
+          {{ range .Labels.SortedPairs }}
+          <span class="label">{{ .Name }}: {{ .Value }}</span>
+          {{ end }}
+        </div>
+        
+        {{ if .GeneratorURL }}
+        <div><span>Prometheus:</span> <a href="{{ .GeneratorURL }}">Query</a></div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </body>
+    </html>
+    {{ end }}
+
+# Security context
+securityContext:
+  runAsUser: 65534
+  runAsGroup: 65534
+  fsGroup: 65534
+
+# RBAC configuration
+rbac:
+  create: true
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: alertmanager
+
+# Network policy
+networkPolicy:
+  enabled: true
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+# Ingress configuration
+ingress:
+  enabled: false
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0 

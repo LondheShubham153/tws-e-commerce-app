@@ -1,0 +1,112 @@
+# Default values for EasyShop application
+# This is a YAML-formatted file.
+
+# Specify the number of replicas
+replicaCount: 2
+
+# Image configuration
+image:
+  repository: trainwithshubham/easyshop-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# MongoDB configuration
+mongodb:
+  enabled: true
+  # These values will be used if the MongoDB chart is enabled
+  auth:
+    rootPassword: easyshop-root
+    username: easyshopapp
+    password: easyshop-password
+    database: easyshop
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 3000
+  targetPort: 3000
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: easyshop.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: easyshop-tls
+      hosts:
+        - easyshop.example.com
+
+# Application configuration
+config:
+  nodeEnv: production
+  nextauthUrl: https://easyshop.example.com
+  mongodbUri: mongodb://easyshopapp:easyshop-password@mongodb-service:27017/easyshop
+
+# Resource settings
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+# Pod scheduling
+nodeSelector: {}
+
+# Affinity and anti-affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - easyshop
+          topologyKey: kubernetes.io/hostname
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Persistent volumes for cache
+persistence:
+  cacheEnabled: true
+  cacheSize: 1Gi
+
+# Liveness and readiness probes
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Prometheus metrics
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true 

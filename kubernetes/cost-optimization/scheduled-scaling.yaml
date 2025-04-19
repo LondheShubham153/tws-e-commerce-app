@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-down-night
+  namespace: easyshop-dev
+spec:
+  schedule: "0 20 * * 1-5"  # Monday-Friday at 8:00 PM
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: scale-manager
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Scale down non-essential services during off-hours
+              kubectl scale deployment easyshop --replicas=1 -n easyshop-dev
+              
+              # Log the scale-down activity
+              echo "$(date): Scaled down easyshop to 1 replica for overnight cost savings"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-up-morning
+  namespace: easyshop-dev
+spec:
+  schedule: "0 8 * * 1-5"  # Monday-Friday at 8:00 AM
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: scale-manager
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Scale up services for business hours
+              kubectl scale deployment easyshop --replicas=2 -n easyshop-dev
+              
+              # Log the scale-up activity
+              echo "$(date): Scaled up easyshop to 2 replicas for business hours"
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: scale-manager
+  namespace: easyshop-dev
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployment-scaler
+  namespace: easyshop-dev
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments/scale"]
+  verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: scale-manager-binding
+  namespace: easyshop-dev
+subjects:
+- kind: ServiceAccount
+  name: scale-manager
+  namespace: easyshop-dev
+roleRef:
+  kind: Role
+  name: deployment-scaler
+  apiGroup: rbac.authorization.k8s.io 

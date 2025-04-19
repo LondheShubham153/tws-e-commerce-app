@@ -1,0 +1,215 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: easyshop-prod
+  labels:
+    app: mongodb
+    component: database
+    environment: production
+spec:
+  serviceName: mongodb-service
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        component: database
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9216"
+    spec:
+      securityContext:
+        fsGroup: 999
+        runAsGroup: 999
+        runAsUser: 999
+        runAsNonRoot: true
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - mongodb
+            topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: mongodb
+          image: mongo:4.4
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+          command:
+            - "mongod"
+            - "--bind_ip_all"
+            - "--replSet"
+            - "rs0"
+            - "--auth"
+            - "--wiredTigerCacheSizeGB"
+            - "0.25"
+          ports:
+            - containerPort: 27017
+              name: mongodb
+              protocol: TCP
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: root-username
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: root-password
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+            - name: mongodb-config
+              mountPath: /config
+            - name: mongodb-scripts
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - mongo
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+        - name: mongodb-exporter
+          image: bitnami/mongodb-exporter:0.11.2
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+          ports:
+            - containerPort: 9216
+              name: metrics
+              protocol: TCP
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: connection-string
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: mongodb-config
+          configMap:
+            name: mongodb-config
+        - name: mongodb-scripts
+          configMap:
+            name: mongodb-init-scripts
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "ebs-sc"
+        resources:
+          requests:
+            storage: 20Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: easyshop-prod
+data:
+  mongod.conf: |
+    storage:
+      dbPath: /data/db
+      journal:
+        enabled: true
+    net:
+      bindIp: 0.0.0.0
+      port: 27017
+    security:
+      authorization: enabled
+    replication:
+      replSetName: rs0
+    setParameter:
+      enableLocalhostAuthBypass: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init-scripts
+  namespace: easyshop-prod
+data:
+  init-replica.sh: |
+    #!/bin/bash
+    # Wait for all pods to be ready
+    sleep 30
+    
+    # Initialize replica set
+    mongo --eval "rs.initiate({
+      _id: 'rs0',
+      members: [
+        { _id: 0, host: 'mongodb-0.mongodb-service.easyshop-prod.svc.cluster.local:27017' },
+        { _id: 1, host: 'mongodb-1.mongodb-service.easyshop-prod.svc.cluster.local:27017' },
+        { _id: 2, host: 'mongodb-2.mongodb-service.easyshop-prod.svc.cluster.local:27017' }
+      ]
+    })"
+    
+    # Wait for replica set to initialize
+    sleep 10
+    
+    # Create application user
+    mongo admin --eval "db.createUser({
+      user: '$MONGO_INITDB_ROOT_USERNAME',
+      pwd: '$MONGO_INITDB_ROOT_PASSWORD',
+      roles: [ { role: 'root', db: 'admin' } ]
+    })"
+    
+    # Create app database and user
+    mongo easyshop --eval "db.createUser({
+      user: 'easyshopapp',
+      pwd: '$MONGO_INITDB_APP_PASSWORD',
+      roles: [ { role: 'readWrite', db: 'easyshop' } ]
+    })" 

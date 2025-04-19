@@ -1,0 +1,244 @@
+---
+- name: Setup EC2 with DevOps Tools for EasyShop
+  hosts: ec2
+  become: true
+
+  vars:
+    jenkins_java_package: openjdk-17-jre
+    jenkins_repo_key_url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+    jenkins_repo_url: deb https://pkg.jenkins.io/debian-stable binary/
+    trivy_repo_key_url: https://aquasecurity.github.io/trivy-repo/deb/public.key
+    trivy_repo_url: "deb https://aquasecurity.github.io/trivy-repo/deb {{ ansible_distribution_release }} main"
+    firewall_ports:
+      - 8080 # Jenkins
+      - 80   # HTTP
+      - 443  # HTTPS
+      - 22   # SSH
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags:
+        - update
+        - always
+
+    # Install Basic Dependencies
+    - name: Install basic dependencies
+      apt:
+        name:
+          - fontconfig
+          - wget
+          - apt-transport-https
+          - gnupg
+          - lsb-release
+          - snapd
+          - ca-certificates
+          - git
+          - curl
+          - unzip
+          - python3-pip
+        state: present
+      tags:
+        - dependencies
+
+    # Install Java for Jenkins
+    - name: Install Java for Jenkins
+      apt:
+        name: "{{ jenkins_java_package }}"
+        state: present
+      tags:
+        - java
+        - jenkins
+
+    # Jenkins Installation
+    - name: Add Jenkins GPG key
+      get_url:
+        url: "{{ jenkins_repo_key_url }}"
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+      tags:
+        - jenkins
+        - repo
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] {{ jenkins_repo_url }}"
+        state: present
+        filename: jenkins
+      tags:
+        - jenkins
+        - repo
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+      tags:
+        - jenkins
+        - install
+
+    # Docker Installation
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+      tags:
+        - docker
+        - install
+
+    # Configure Docker and Jenkins for permissions
+    - name: Add users to docker group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: yes
+      loop:
+        - ubuntu
+        - jenkins
+      tags:
+        - docker
+        - configure
+
+    # Trivy Installation for Security Scanning
+    - name: Add Trivy repository key
+      apt_key:
+        url: "{{ trivy_repo_key_url }}"
+        state: present
+      tags:
+        - trivy
+        - repo
+
+    - name: Add Trivy repository
+      apt_repository:
+        repo: "{{ trivy_repo_url }}"
+        state: present
+        filename: trivy
+      tags:
+        - trivy
+        - repo
+
+    - name: Install Trivy
+      apt:
+        name: trivy
+        state: present
+        update_cache: yes
+      tags:
+        - trivy
+        - install
+
+    # Install AWS CLI
+    - name: Install AWS CLI
+      snap:
+        name: aws-cli
+        classic: yes
+        state: present
+      tags:
+        - aws
+        - install
+
+    # Install Helm for Kubernetes package management
+    - name: Install Helm
+      snap:
+        name: helm
+        classic: yes
+        state: present
+      tags:
+        - helm
+        - kubernetes
+        - install
+
+    # Install kubectl for Kubernetes cluster management
+    - name: Install kubectl
+      snap:
+        name: kubectl
+        classic: yes
+        state: present
+      tags:
+        - kubectl
+        - kubernetes
+        - install
+
+    # Start and enable services
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+      tags:
+        - service
+        - docker
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+      tags:
+        - service
+        - jenkins
+
+    # Configure firewall
+    - name: Check if UFW is installed
+      package:
+        name: ufw
+        state: present
+      register: ufw_check
+      tags:
+        - firewall
+
+    - name: Configure firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: "{{ firewall_ports }}"
+      when: ufw_check.changed == false
+      tags:
+        - firewall
+
+    # Get Jenkins initial admin password
+    - name: Wait for Jenkins to start up
+      wait_for:
+        port: 8080
+        delay: 10
+        timeout: 300
+      tags:
+        - jenkins
+        - configure
+
+    - name: Get initial Jenkins admin password
+      shell: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+      changed_when: false
+      tags:
+        - jenkins
+        - configure
+      
+    - name: Display initial Jenkins admin password
+      debug:
+        msg: "Jenkins initial admin password is: {{ jenkins_password.stdout }}"
+      tags:
+        - jenkins
+        - configure
+
+    - name: Create Jenkins information file
+      copy:
+        content: |
+          Jenkins URL: http://{{ ansible_default_ipv4.address }}:8080
+          Initial Admin Password: {{ jenkins_password.stdout }}
+          
+          Instructions:
+          1. Browse to the Jenkins URL
+          2. Enter the Initial Admin Password when prompted
+          3. Install suggested plugins or select specific plugins
+          4. Create your first admin user
+          5. Start using Jenkins
+        dest: /home/ubuntu/jenkins_info.txt
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+      tags:
+        - jenkins
+        - configure 

@@ -1,0 +1,111 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: easyshop-network-policy
+  namespace: easyshop-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: easyshop
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from ingress controller
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3000
+  - from:
+    # Allow traffic from monitoring (for Prometheus scraping)
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+    ports:
+    - protocol: TCP
+      port: 3000
+      # Only allow monitoring from specific pods
+    - podSelector:
+        matchLabels:
+          app: prometheus
+  egress:
+  # Allow traffic to MongoDB
+  - to:
+    - podSelector:
+        matchLabels:
+          app: mongodb
+          environment: production
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow outbound HTTPS for external API calls - only to specific domains
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        - 169.254.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+---
+# Additional policy for MongoDB pods in production
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongodb-network-policy
+  namespace: easyshop-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: mongodb
+      environment: production
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Only allow connections from the application pods
+  - from:
+    - podSelector:
+        matchLabels:
+          app: easyshop
+          environment: production
+    ports:
+    - protocol: TCP
+      port: 27017
+  # Allow connections from MongoDB exporter
+  - from:
+    - podSelector:
+        matchLabels:
+          app: mongodb-exporter
+    ports:
+    - protocol: TCP
+      port: 27017
+  egress:
+  # Allow DNS resolution
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53 

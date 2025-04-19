@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: easyshop-pdb
+  namespace: easyshop-staging
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: easyshop 

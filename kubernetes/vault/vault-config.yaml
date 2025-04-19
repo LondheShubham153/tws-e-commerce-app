@@ -1,0 +1,243 @@
+# IMPORTANT: This is a sample file and should be moved to your Kubernetes resources directory
+# Move this file to: kubernetes/vault/vault-config.yaml
+
+# Vault Kubernetes Integration Configuration
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vault-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-auth
+  namespace: vault-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vault-auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: vault-auth
+  namespace: vault-system
+roleRef:
+  kind: ClusterRole
+  name: system:auth-delegator
+  apiGroup: rbac.authorization.k8s.io
+---
+# ServiceMonitor for Prometheus to scrape Vault metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vault
+  namespace: vault-system
+  labels:
+    app: vault
+spec:
+  selector:
+    matchLabels:
+      app: vault
+  namespaceSelector:
+    matchNames:
+      - vault-system
+  endpoints:
+  - port: metrics
+    interval: 30s
+---
+# Service to expose Vault metrics for Prometheus
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-metrics
+  namespace: vault-system
+  labels:
+    app: vault
+spec:
+  selector:
+    app: vault
+  ports:
+  - name: metrics
+    port: 9102
+    targetPort: 9102
+  type: ClusterIP
+---
+# Example application namespace with Vault integration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: application
+  labels:
+    name: application
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: application-sa
+  namespace: application
+---
+# Example deployment with Vault agent injector annotations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: application
+  labels:
+    app: webapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webapp
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: webapp
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "application"
+        vault.hashicorp.com/agent-inject-secret-db-creds.json: "secret/data/application/database"
+        vault.hashicorp.com/agent-inject-template-db-creds.json: |
+          {
+            {{- with secret "secret/data/application/database" -}}
+            "db_connection": "postgresql://{{ .Data.data.username }}:{{ .Data.data.password }}@db-postgresql.database.svc.cluster.local:5432/app_db?sslmode=require"
+            {{- end -}}
+          }
+        vault.hashicorp.com/agent-limits-cpu: "50m"
+        vault.hashicorp.com/agent-limits-mem: "128Mi"
+        vault.hashicorp.com/agent-requests-cpu: "25m"
+        vault.hashicorp.com/agent-requests-mem: "64Mi"
+        vault.hashicorp.com/agent-pre-populate-only: "true"
+        vault.hashicorp.com/tls-skip-verify: "true"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9102"
+    spec:
+      serviceAccountName: application-sa
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+      containers:
+      - name: webapp
+        image: nginx:1.21-alpine
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /usr/share/nginx/html/config
+          readOnly: true
+        - name: vault-secrets
+          mountPath: /app/secrets
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: config-volume
+        configMap:
+          name: webapp-config
+      - name: vault-secrets
+        emptyDir:
+          medium: Memory
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-config
+  namespace: application
+data:
+  config.json: |
+    {
+      "app_name": "EasyShop Web Application",
+      "api_endpoint": "https://api.easyshop.internal",
+      "logging_level": "info"
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+  namespace: application
+spec:
+  selector:
+    app: webapp
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: webapp-pdb
+  namespace: application
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: webapp
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: webapp-network-policy
+  namespace: application
+spec:
+  podSelector:
+    matchLabels:
+      app: webapp
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: database
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: vault-system
+    ports:
+    - protocol: TCP
+      port: 8200 

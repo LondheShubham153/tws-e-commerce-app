@@ -1,0 +1,21 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: easyshop-pdb
+  namespace: easyshop-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: easyshop
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mongodb-pdb
+  namespace: easyshop-prod
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: mongodb 

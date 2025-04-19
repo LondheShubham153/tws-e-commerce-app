@@ -58,6 +58,29 @@ Exit the PostgreSQL database console.
 ```sql
 \q
 ```
+## After exiting from postgresql terminal, follow the below steps to change the postgres configuration
+
+## 1. Open the PostgreSQL `postgresql.conf` file (usually located in `/etc/postgresql/<version>/main/postgresql.conf`
+
+Check the listen_addresses setting: Find the following line in the postgresql.conf file:
+#listen_addresses = 'localhost'  # what IP address(es) to listen on;
+
+Uncomment it and change it to
+```bash
+listen_addresses = '*' or  listen_addresses = 'your_ip'
+```
+
+## 2. Locate the `pg_hba.conf` file. It’s usually in the same directory as `postgresql.conf`. Typical location is `•	/etc/postgresql/<version>/main/pg_hba.conf`
+
+add the following line to allow connections from any IP address (replace 0.0.0.0/0 with a more specific range if needed):
+```bash
+host    all             all             0.0.0.0/0            md5
+```
+This allows all remote IP addresses to connect using password-based authentication.
+
+## 3. Reload PostgreSQL to apply changes:
+```bash
+sudo systemctl reload postgresql
+```
 
 With these steps, you will have successfully set up a PostgreSQL database and user for SonarQube.
-

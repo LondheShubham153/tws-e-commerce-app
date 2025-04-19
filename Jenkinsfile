@@ -1,15 +1,16 @@
-@Library('Shared') _
+@Library('shared') _
 
 pipeline {
     agent any
     
     environment {
-        // Update the main app image name to match the deployment file
-        DOCKER_IMAGE_NAME = 'trainwithshubham/easyshop-app'
-        DOCKER_MIGRATION_IMAGE_NAME = 'trainwithshubham/easyshop-migration'
+        DOCKER_IMAGE_NAME = 'dvharsh/easyshop-app'
+        DOCKER_MIGRATION_IMAGE_NAME = 'dvharsh/easyshop-migration'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
-        GITHUB_CREDENTIALS = credentials('github-credentials')
-        GIT_BRANCH = "master"
+        GITHUB_CREDENTIALS = credentials('git-hub credentials') // GitHub credentials from Jenkins credentials
+        GIT_BRANCH = "second-Go"
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials') // Docker Hub credentials from Jenkins credentials
+        SONARQUBE_SERVER = 'SonarQube' // The ID of your SonarQube server in Jenkins
     }
     
     stages {
@@ -24,7 +25,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone("https://github.com/LondheShubham153/tws-e-commerce-app.git","master")
+                    git credentialsId: 'git-hub credentials', branch: 'second-Go', url: 'https://github.com/DV-boop/e-commerce-app.git'
                 }
             }
         }
@@ -34,12 +35,7 @@ pipeline {
                 stage('Build Main App Image') {
                     steps {
                         script {
-                            docker_build(
-                                imageName: env.DOCKER_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                dockerfile: 'Dockerfile',
-                                context: '.'
-                            )
+                            docker.build(env.DOCKER_IMAGE_NAME, "-t ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG} .")
                         }
                     }
                 }
@@ -47,12 +43,7 @@ pipeline {
                 stage('Build Migration Image') {
                     steps {
                         script {
-                            docker_build(
-                                imageName: env.DOCKER_MIGRATION_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                dockerfile: 'scripts/Dockerfile.migration',
-                                context: '.'
-                            )
+                            docker.build(env.DOCKER_MIGRATION_IMAGE_NAME, "-t ${env.DOCKER_MIGRATION_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG} -f scripts/Dockerfile.migration .")
                         }
                     }
                 }
@@ -62,7 +53,20 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                    run_tests()
+                    run_tests() // Replace with your actual testing logic, e.g., npm test, pytest, etc.
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // Start the SonarQube scanner
+                    withSonarQubeEnv(SONARQUBE_SERVER) {
+                        // Run the SonarQube scanner on your codebase
+                        sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=ecommerce-app -Dsonar.host.url=http://your-sonarqube-server:9000'
+                        // Replace with the command suitable for your project (npm, mvn, etc.)
+                    }
                 }
             }
         }
@@ -71,9 +75,7 @@ pipeline {
             steps {
                 script {
                     // Create directory for results
-                  
                     trivy_scan()
-                    
                 }
             }
         }
@@ -83,11 +85,9 @@ pipeline {
                 stage('Push Main App Image') {
                     steps {
                         script {
-                            docker_push(
-                                imageName: env.DOCKER_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                credentials: 'docker-hub-credentials'
-                            )
+                            docker.withRegistry('https://index.docker.io/v1/', credentialsId: 'docker-hub-credentials') {
+                                docker.image(env.DOCKER_IMAGE_NAME).push("${env.DOCKER_IMAGE_TAG}")
+                            }
                         }
                     }
                 }
@@ -95,28 +95,29 @@ pipeline {
                 stage('Push Migration Image') {
                     steps {
                         script {
-                            docker_push(
-                                imageName: env.DOCKER_MIGRATION_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                credentials: 'docker-hub-credentials'
-                            )
+                            docker.withRegistry('https://index.docker.io/v1/', credentialsId: 'docker-hub-credentials') {
+                                docker.image(env.DOCKER_MIGRATION_IMAGE_NAME).push("${env.DOCKER_IMAGE_TAG}")
+                            }
                         }
                     }
                 }
             }
         }
         
-        // Add this new stage
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    update_k8s_manifests(
-                        imageTag: env.DOCKER_IMAGE_TAG,
-                        manifestsPath: 'kubernetes',
-                        gitCredentials: 'github-credentials',
-                        gitUserName: 'Jenkins CI',
-                        gitUserEmail: 'shubhamnath5@gmail.com'
-                    )
+                    // Check if there are any changes
+                    sh 'git diff --exit-code || echo "Changes detected in Kubernetes manifests"'
+                    
+                    // Configure Git
+                    sh 'git config --global user.name "Jenkins CI"'
+                    sh 'git config --global user.email "dvharsh9@gmail.com"'
+                    
+                    // Stage and commit changes
+                    sh 'git add kubernetes/*'
+                    sh 'git commit -m "Update Kubernetes manifests with new image tag"'
+                    sh 'git push https://github.com/DV-boop/e-commerce-app.git second-Go'
                 }
             }
         }

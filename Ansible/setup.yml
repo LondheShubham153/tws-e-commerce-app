@@ -1,0 +1,102 @@
+---
+- name: Setup EC2 with Jenkins, Docker, Trivy, AWS CLI, Helm, and Kubectl
+  hosts: ec2
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install dependencies
+      apt:
+        name:
+          - fontconfig
+          - openjdk-17-jre
+          - docker.io
+          - wget
+          - apt-transport-https
+          - gnupg
+          - lsb-release
+          - snapd
+        state: present
+
+    - name: Add Jenkins GPG key
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add Jenkins repo
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started
+
+    - name: Add user to docker group (ubuntu user)
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Add Jenkins to docker group
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
+
+    - name: Restart Jenkins
+      systemd:
+        name: jenkins
+        state: restarted
+
+    - name: Add Trivy repo key
+      apt_key:
+        url: https://aquasecurity.github.io/trivy-repo/deb/public.key
+        state: present
+
+    - name: Add Trivy repository
+      apt_repository:
+        repo: "deb https://aquasecurity.github.io/trivy-repo/deb {{ ansible_distribution_release }} main"
+        state: present
+        filename: trivy
+
+    - name: Install Trivy
+      apt:
+        name: trivy
+        state: present
+        update_cache: yes
+
+    - name: Install AWS CLI
+      snap:
+        name: aws-cli
+        classic: yes
+        state: present
+
+    - name: Install Helm
+      snap:
+        name: helm
+        classic: yes
+        state: present
+
+    - name: Install kubectl
+      snap:
+        name: kubectl
+        classic: yes
+        state: present

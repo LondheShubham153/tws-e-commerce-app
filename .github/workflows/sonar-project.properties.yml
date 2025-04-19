@@ -9,6 +9,8 @@ on:
 env:
   DOCKER_IMAGE_NAME: yasir261/easyshop-app
   DOCKER_MIGRATION_IMAGE_NAME: yasir261/easyshop-migration
+  AWS_REGION: eu-west-1
+  EKS_CLUSTER_NAME: easyshop-eks-cluster
 
 jobs:
   build-and-test:
@@ -121,36 +123,50 @@ jobs:
             git push
           else
             echo "No changes to commit"
-          fi
-
-  deploy-to-kind:
-    needs: [build-and-test, update-k8s-manifests]
-    runs-on: self-hosted
-    if: github.ref == 'refs/heads/master'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+          fi  4
 
       - name: Install kubectl
         run: |
           sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo chmod +x kubectl 
-          sudo mv kubectl /usr/local/bin/kubectl
+          sudo mv kubectl /u    - name: Checkout co  uses: actions/checkout@v4    - name: Install k  run: |    sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"    sudo chmod +x kubectl 
+          sudo mv kubectl /usr/local/bin/
 
-      - name: Install Kind
-        run: |
-          sudo curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
-          sudo chmod +x ./kind
-          sudo mv ./kind /usr/local/bin/kind
+  deploy-to-eks:
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    
+    permissions:
+      id-token: write
+      contents: read
 
-      - name: Create Kind Cluster
-        run: |
-          kind create cluster --name easyshop || true
-          kubectl cluster-info
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Docker credentials in Kind
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install kubectl
         run: |
+          sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Update kube config
+        run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+        
+      - name: Deploy to EKS
+        run: |
+          # Create namespace if it doesn't exist
+          kubectl create namespace easyshop || true
+
+          # Create Docker registry secret
           kubectl create secret docker-registry regcred \
             --docker-server=https://index.docker.io/v1/ \
             --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
@@ -158,11 +174,6 @@ jobs:
             --docker-email=${{ secrets.DOCKERHUB_EMAIL }} \
             -n easyshop || true
 
-      - name: Deploy to Kind
-        run: |
-          # Create namespace if it doesn't exist
-          kubectl create namespace easyshop || true
-          
           # Apply Kubernetes manifests in order
           kubectl apply -f kubernetes/00-cluster-issuer.yml || true
           kubectl apply -f kubernetes/01-namespace.yaml
@@ -177,12 +188,36 @@ jobs:
           kubectl apply -f kubernetes/10-ingress.yaml
           kubectl apply -f kubernetes/11-hpa.yaml
           kubectl apply -f kubernetes/12-migration-job.yaml
-          
-          # Wait for deployment to be ready
-          kubectl rollout status deployment/easyshop -n easyshop --timeout=300s
 
-      - name: Verify Deployment
+      - name: Wait for deployment rollout
         run: |
+          kubectl rollout status deployment/easyshop -n easyshop --timeout=300s
+          
+      - name: Verify deployment
+        run: |
+          echo "Getting pod status..."
           kubectl get pods -n easyshop
+          
+          echo "Getting services..."
           kubectl get svc -n easyshop
-          echo "Application deployed successfully to Kind cluster"
+          
+          echo "Getting ingress..."
+          kubectl get ingress -n easyshop
+
+      - name: Check application health
+        run: |
+          # Get LoadBalancer URL
+          LB_HOSTNAME=$(kubectl get svc -n ingress-nginx nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "LoadBalancer URL: $LB_HOSTNAME"
+          
+          # Wait for DNS propagation and perform health check
+          for i in {1..30}; do
+            if curl -s -o /dev/null -w "%{http_code}" "https://$LB_HOSTNAME" | grep -q "200\|301\|302"; then
+              echo "Application is healthy!"
+              exit 0
+            fi
+            echo "Waiting for application to be ready... ($i/30)"
+            sleep 10
+          done
+          echo "Application health check failed"
+          exit 1

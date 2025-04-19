@@ -7,15 +7,7 @@ A modern full-stack e-commerce application built with **Next.js**, **TypeScript*
 
 ## ⚙️ DevOps Architecture (Production)
 
-```mermaid
-graph LR
-  A[GitHub Repo] --> B[Jenkins CI]
-  B --> C[Git Update: Manifest Repo]
-  C --> D[ArgoCD (GitOps)]
-  D --> E[EKS Cluster]
-  E --> F[EasyShop App]
-  E --> G[Prometheus + Grafana]
-```
+```mermaid graph LR A[GitHub Repo] --> B[Jenkins CI] B --> C[Git Update: Manifest] C --> D[ArgoCD - GitOps] D --> E[EKS Cluster] E --> F[EasyShop App] E --> G[Prometheus & Grafana] ```
 
 ---
 

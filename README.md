@@ -46,10 +46,107 @@ EasyShop follows a three-tier architecture pattern:
 - CRUD Operations
 - Data Validation
 
-## PreRequisites
+## 🚀 Infrastructure & DevOps
+
+The EasyShop platform is built with modern DevOps practices and includes:
+
+### Infrastructure Components
+- **AWS Cloud Platform**: Leveraging EKS, EC2, VPC, and more
+- **Terraform**: Infrastructure as Code for consistent environment setup
+- **Kubernetes**: Container orchestration for scalable deployments
+- **HashiCorp Vault**: Secure secrets management with high availability
+- **Monitoring Stack**: Prometheus, Grafana, and Loki for comprehensive monitoring
+
+### 🗂️ DevOps Project Structure
+
+```
+easyshop/
+├── ansible/                          # Configuration management
+│   ├── inventory/                    # Host inventory files
+│   │   ├── production                # Production environment hosts
+│   │   └── staging                   # Staging environment hosts
+│   ├── playbooks/                    # Ansible playbooks
+│   │   ├── setup_jenkins.yml         # Jenkins server setup
+│   │   ├── setup_monitoring.yml      # Prometheus & Grafana setup
+│   │   ├── setup_bastion.yml         # Bastion host configuration
+│   │   └── deploy_app.yml            # Application deployment
+│   └── roles/                        # Reusable Ansible roles
+│       ├── common/                   # Common server setup
+│       ├── docker/                   # Docker installation
+│       ├── jenkins/                  # Jenkins configuration
+│       └── monitoring/               # Monitoring stack setup
+│
+├── docker/                           # Docker configurations
+│   ├── Dockerfile                    # Main application Dockerfile
+│   ├── docker-compose.yml            # Local development setup
+│   ├── .dockerignore                 # Docker ignore file
+│   └── docker-entrypoint.sh          # Container entrypoint script
+│
+├── jenkins/                          # Jenkins CI/CD configuration
+│   ├── Jenkinsfile                   # Main pipeline definition
+│   ├── scripts/                      # Jenkins pipeline scripts
+│   │   ├── build.sh                  # Build script
+│   │   ├── test.sh                   # Test script
+│   │   └── deploy.sh                 # Deployment script
+│   └── shared-libraries/             # Jenkins shared libraries
+│       └── vars/                     # Pipeline shared functions
+│           ├── dockerBuild.groovy    # Docker build function
+│           ├── slackNotify.groovy    # Slack notification function
+│           └── updateManifest.groovy # K8s manifest update function
+│
+├── kubernetes/                       # Kubernetes manifests
+│   ├── applications/                 # Application manifests
+│   │   ├── 00-namespace.yaml         # EasyShop namespace
+│   │   ├── 01-mongodb-pv.yaml        # MongoDB persistent volume
+│   │   ├── 02-mongodb-pvc.yaml       # MongoDB persistent volume claim
+│   │   ├── 03-configmap.yaml         # Application configuration
+│   │   ├── 04-secrets.yaml           # Application secrets
+│   │   ├── 05-mongodb-service.yaml   # MongoDB service
+│   │   ├── 06-mongodb-statefulset.yaml # MongoDB stateful set
+│   │   ├── 07-easyshop-deployment.yaml # EasyShop application deployment
+│   │   ├── 08-easyshop-service.yaml  # EasyShop service
+│   │   ├── 09-ingress.yaml           # Ingress configuration
+│   │   └── 10-hpa.yaml               # Horizontal pod autoscaler
+│   │
+│   ├── monitoring/                   # Monitoring stack manifests
+│   │   ├── namespace.yaml            # Monitoring namespace
+│   │   ├── prometheus/               # Prometheus configuration
+│   │   ├── grafana/                  # Grafana configuration
+│   │   ├── alertmanager/             # Alertmanager configuration
+│   │   └── loki/                     # Loki configuration
+│   │
+│   └── vault/                        # Vault Kubernetes integration
+│       └── vault-config.yaml         # Vault Kubernetes configuration
+│
+└── terraform/                        # Infrastructure as Code
+    ├── environments/                 # Environment-specific configurations
+    │   ├── dev/                      # Development environment
+    │   ├── staging/                  # Staging environment
+    │   └── prod/                     # Production environment
+    ├── modules/                      # Reusable Terraform modules
+    │   ├── networking/               # VPC and networking module
+    │   ├── eks/                      # EKS cluster module
+    │   ├── ec2/                      # EC2 instances module
+    │   └── vault/                    # Vault infrastructure module
+    ├── main.tf                       # Main Terraform configuration
+    ├── variables.tf                  # Variable definitions
+    ├── outputs.tf                    # Output definitions
+    └── templates/                    # User data templates
+        ├── bastion_user_data.tpl     # Bastion host setup script
+        └── vault_user_data.tpl       # Vault server setup script
+```
+
+## Prerequisites
 
 > [!IMPORTANT]  
 > Before you begin setting up this project, make sure the following tools are installed and configured properly on your system:
+
+- **Terraform** (v1.5.0+)
+- **AWS CLI** (configured with appropriate credentials)
+- **kubectl** (for Kubernetes management)
+- **Helm** (v3+)
+- **Git**
+- **Docker**
 
 ## Setup & Initialization <br/>
 
@@ -88,7 +185,7 @@ sudo ./aws/install
 - **Default output format:**<br/>
 
 > [!NOTE] 
-> Make sure the IAM user you're using has the necessary permissions. You’ll need an AWS IAM Role with programmatic access enabled, along with the Access Key and Secret Key.
+> Make sure the IAM user you're using has the necessary permissions. You'll need an AWS IAM Role with programmatic access enabled, along with the Access Key and Secret Key.
 
 ## Getting Started
 
@@ -135,9 +232,9 @@ After deployment, grab the public IP of your EC2 instance from the output or AWS
 ssh -i terra-key ubuntu@<public-ip>
 ```
 8. **Update your kubeconfig:**
-wherever you want to access your eks wheather it is yur local machine or bastion server this command will help you to interact with your eks.
+Configure kubectl to interact with your EKS cluster:
 > [!CAUTION]
-> you need to configure aws cli first to execute this command:
+> You need to configure aws cli first to execute this command:
 
 ```bash
 aws configure
@@ -149,6 +246,55 @@ aws eks --region eu-west-1 update-kubeconfig --name tws-eks-cluster
 9. **Check your cluster:**
 ```bash
 kubectl get nodes
+```
+
+## 📊 Monitoring & Observability
+
+EasyShop includes a comprehensive monitoring stack:
+
+### Components
+- **Prometheus**: For metrics collection and alerting
+- **Grafana**: For visualization of metrics with prebuilt dashboards
+- **Loki**: For log aggregation and querying
+- **Alertmanager**: For alert management and notifications
+
+### Features
+- Real-time performance dashboards for the application and infrastructure
+- Predefined alerts for critical system events
+- Centralized logging for troubleshooting
+- Custom dashboards for business metrics
+
+### Deployment
+The monitoring stack is deployed as Kubernetes resources:
+```bash
+kubectl apply -f kubernetes/monitoring/namespace.yaml
+kubectl apply -f kubernetes/monitoring/prometheus/
+kubectl apply -f kubernetes/monitoring/grafana/
+kubectl apply -f kubernetes/monitoring/loki/
+kubectl apply -f kubernetes/monitoring/alertmanager/
+```
+
+### Access Monitoring Tools
+After deployment, you can access:
+- Grafana: https://grafana.easyshop.internal
+- Prometheus: https://prometheus.easyshop.internal
+- Alertmanager: https://alertmanager.easyshop.internal
+
+## 🔐 Vault Integration
+
+EasyShop uses HashiCorp Vault for secure secrets management:
+
+### Features
+- High-availability Vault cluster
+- Auto-unsealing with AWS KMS
+- Integration with Kubernetes
+- Dynamic database credentials
+- Encrypted secrets storage
+
+### Deployment
+Vault is deployed using Terraform for the infrastructure and Kubernetes for service integration:
+```bash
+kubectl apply -f kubernetes/vault/
 ```
 
 ## Jenkins Setup Steps
@@ -337,15 +483,13 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 ### **Deploy Your Application in Argo CD GUI**<br/>
 
-> 1. On the Argo CD homepage, click on the “New App” button.<br/>
+> 1. On the Argo CD homepage, click on the "New App" button.<br/>
 
 > 2. Fill in the following details:<br/>
 >  -  **Application Name:**
 > `Enter your desired app name`
 >  -  **Project Name:**
 > Select `default` from the dropdown.
->    * **Sync Policy:**
-> Choose `Automatic`.
 
 > 3. In the `Source` section:
 > - **Repo URL:**
@@ -353,13 +497,13 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 > - **Path:** 
  `Kubernetes` (or the actual path inside the repo where your manifests reside)
 
-> 4. In the “Destination” section:
+> 4. In the "Destination" section:
 >  -  **Cluster URL:**
  https://kubernetes.default.svc (usually shown as "default")
 >  -    **Namespace:**
  tws-e-commerce-app (or your desired namespace)
 
-> 5. Click on “Create”.
+> 5. Click on "Create".
 
 ## Nginx ingress controller:<br/>
 > 1. Install the Nginx Ingress Controller using Helm:
@@ -487,7 +631,7 @@ kubectl get svc nginx-ingress-ingress-nginx-controller -n ingress-nginx -o jsonp
 >> ```bash
 >> kubectl get challenges -n easyshop
 >> ```
->
+
 >> ```bash
 >> kubectl describe challenges -n easyshop
 >> ```

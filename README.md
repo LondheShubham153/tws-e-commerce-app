@@ -1,37 +1,53 @@
-🚀 Getting Started
-Docker Setup Guide
-This guide will help you run EasyShop using Docker containers. No local Node.js or MongoDB installation required!
+## 🚀 Getting Started
 
-Prerequisites
-Install Docker on your machine
+### 🐳 Docker Setup Guide
 
-Basic understanding of terminal/command line
+This guide will help you run **EasyShop** using Docker containers.  
+No local Node.js or MongoDB installation required!
 
-Step 1: Environment Setup
-Create a file named .env.local in the root directory with the following content:
+---
+
+### ✅ Prerequisites
+
+- 🐳 [Docker](https://docs.docker.com/get-docker/) installed on your machine  
+- 💻 Basic understanding of terminal/command line
+
+---
+
+### ⚙️ Step 1: Environment Setup
+
+Create a file named `.env.local` in the root directory with the following content:
+
+```env
 # Database Configuration
 MONGODB_URI=mongodb://easyshop-mongodb:27017/easyshop
 
 # NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000  # Replace with your EC2 instance's public IP or put localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3000/api  # Replace with your EC2 instance's public IP or put localhost:3000/api
-NEXTAUTH_SECRET=your-nextauth-secret-key  # Generate this using the command below
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXTAUTH_SECRET=your-nextauth-secret-key
 
 # JWT Configuration
-JWT_SECRET=your-jwt-secret-key  # Generate this using the command below
+JWT_SECRET=your-jwt-secret-key
+```
 
-To generate secure secret keys, use these commands in your terminal:
-For NEXTAUTH_SECRET:
+#### 🔐 To generate secure secret keys:
+
+```bash
+# Generate NEXTAUTH_SECRET
 openssl rand -base64 32
 
-For JWT_SECRET:
+# Generate JWT_SECRET
 openssl rand -hex 32
+```
 
-Step 2: Running the Application
-You have two options to run the application:
+---
 
-Option 1: Using Docker Compose (Recommended)
-This is the easiest way to run the application. All services will be started in the correct order with proper dependencies.
+### 🚦 Step 2: Running the Application
+
+#### 🧩 Option 1: Using Docker Compose (Recommended)
+
+```bash
 # Start all services
 docker compose up -d
 
@@ -40,50 +56,64 @@ docker compose logs -f
 
 # Stop all services
 docker compose down
+```
 
-Option 2: Manual Docker Commands
-If you prefer more control, you can run each service manually:
+---
 
-1. Create a Docker network:
+#### ⚙️ Option 2: Manual Docker Commands
+
+1. **Create a Docker network:**
+
+```bash
 docker network create easyshop-network
+```
 
-2. Start MongoDB:
-docker run -d \
-  --name easyshop-mongodb \
-  --network easyshop-network \
-  -p 27017:27017 \
-  -v mongodb_data:/data/db \
-  mongo:latest
+2. **Start MongoDB:**
 
-3. Build the main application:
+```bash
+docker run -d   --name easyshop-mongodb   --network easyshop-network   -p 27017:27017   -v mongodb_data:/data/db   mongo:latest
+```
+
+3. **Build the main application:**
+
+```bash
 docker build -t easyshop .
+```
 
-4. Build and run data migration:
-Build migration image:
+4. **Build and run data migration:**
+
+```bash
+# Build migration image
 docker build -t easyshop-migration -f scripts/Dockerfile.migration .
 
-Run migration:
-docker run --rm \
-  --network easyshop-network \
-  --env-file .env.local \
-  easyshop-migration
+# Run migration
+docker run --rm   --network easyshop-network   --env-file .env.local   easyshop-migration
+```
 
-5. Start the EasyShop application:
-docker run -d \
-  --name easyshop \
-  --network easyshop-network \
-  -p 3000:3000 \
-  --env-file .env.local \
-  easyshop:latest
+5. **Start the EasyShop app:**
 
-Accessing the Application
-Open your web browser and visit http://localhost:3000. You should see the EasyShop homepage!
+```bash
+docker run -d   --name easyshop   --network easyshop-network   -p 3000:3000   --env-file .env.local   easyshop:latest
+```
 
-Useful Docker Commands
+---
+
+### 🌐 Accessing the Application
+
+> Open your browser and visit:  
+> [http://localhost:3000](http://localhost:3000)
+
+You should see the **EasyShop** homepage!
+
+---
+
+### 🔍 Useful Docker Commands
+
+```bash
 # View running containers
 docker ps
 
-# View container logs
+# View logs
 docker logs easyshop
 docker logs easyshop-mongodb
 
@@ -95,86 +125,115 @@ docker rm easyshop easyshop-mongodb
 
 # Remove network
 docker network rm easyshop-network
+```
 
-🧪 Testing
-[!NOTE] Coming soon: Unit tests and E2E tests with Jest and Cypress
+---
 
-🔧 Troubleshooting
-Build Errors
-Dynamic Server Usage Warnings
+## 🧪 Testing
 
+> ⚠️ _Coming soon: Unit tests and E2E tests using Jest and Cypress_
+
+---
+
+## 🛠️ Troubleshooting
+
+### ⚠️ Dynamic Server Usage Warnings
+
+```bash
 Error: Dynamic server usage: Page couldn't be rendered statically
+```
 
-Solution: This is expected behavior for dynamic routes and API endpoints. These warnings appear during build but won't affect the application's functionality.
+**Solution:**  
+This is expected for dynamic routes and API endpoints. These warnings won’t affect functionality.
 
-MongoDB Connection Issues
+---
+
+### ❌ MongoDB Connection Issues
+
+```bash
 Error: MongoDB connection failed
+```
 
-Solution:
+**Solutions:**
 
-Ensure MongoDB is running locally.
+- Ensure MongoDB is running
+- Verify MongoDB URI in `.env.local`
+- Test the connection using [MongoDB Compass](https://www.mongodb.com/products/compass)
 
-Check if your MongoDB connection string is correct in .env.local.
+---
 
-Try connecting to MongoDB using MongoDB Compass with the same connection string.
+## 💡 Development Tips
 
-Development Tips
-Clear .next folder if you encounter strange build issues: rm -rf .next
+- Clear Next.js build cache:  
+  `rm -rf .next`
+- Run `npm install` after pulling changes
+- Use Node.js version **18+**
+- Double-check environment variables
 
-Run npm install after pulling new changes
+---
 
-Make sure all environment variables are properly set
+## 📦 Project Structure
 
-Use Node.js version 18 or higher
-
-📦 Project Structure
+```bash
 easyshop/
 ├── src/
 │   ├── app/              # Next.js App Router pages
 │   ├── components/       # Reusable React components
-│   ├── lib/             # Utilities and configurations
-│   │   ├── auth/        # Authentication logic
-│   │   ├── db/          # Database configuration
-│   │   └── features/    # Redux slices
-│   ├── types/           # TypeScript type definitions
-│   └── styles/          # Global styles and Tailwind config
-├── public/              # Static assets
-└── scripts/            # Database migration scripts
+│   ├── lib/              # Utilities and config
+│   │   ├── auth/         # Authentication logic
+│   │   ├── db/           # MongoDB config
+│   │   └── features/     # Redux slices
+│   ├── types/            # TypeScript types
+│   └── styles/           # Global styles + Tailwind CSS
+├── public/               # Static assets
+└── scripts/              # Database migration scripts
+```
 
-🤝 Contributing
-We welcome contributions! Please follow these steps:
+---
 
-Fork the repository
+## 🤝 Contributing
 
-Create a new branch: git checkout -b feature/amazing-feature
+We welcome contributions! Follow these steps:
 
-Make your changes
+```bash
+# 1. Fork the repository
+# 2. Create your branch
+git checkout -b feature/amazing-feature
 
-Run tests: npm test (coming soon)
+# 3. Make your changes
+# 4. Commit your changes
+git commit -m "Add amazing feature"
 
-Commit your changes: git commit -m 'Add amazing feature'
+# 5. Push your changes
+git push origin feature/amazing-feature
 
-Push to the branch: git push origin feature/amazing-feature
+# 6. Open a Pull Request 🎉
+```
 
-Open a Pull Request
+📌 _Check our **Contributing Guidelines** for more details_
 
-[!TIP] Check our Contributing Guidelines for more details.
+---
 
-📝 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📝 License
 
-🙏 Acknowledgments
-Next.js
-Tailwind CSS
-MongoDB
-Redux Toolkit
-Radix UI
+This project is licensed under the **MIT License** – see the [LICENSE](./LICENSE) file for details.
 
-📫 Contact
-For questions or feedback, please open an issue or contact the maintainers:
+---
 
-Made with ❤️ by @sahastra16
+## 🙏 Acknowledgments
 
-Project Link: https://github.com/sahastra16/tws-e-commerce-app
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [MongoDB](https://www.mongodb.com/)
+- [Redux Toolkit](https://redux-toolkit.js.org/)
+- [Radix UI](https://www.radix-ui.com/)
 
-LinkedIn Link : https://www.linkedin.com/in/sahastra/ 
+---
+
+## 📫 Contact
+
+For feedback or questions, open an issue or reach out:
+
+**Made with ❤️ by [@sahastra16](https://github.com/sahastra16)**  
+🔗 Project: [https://github.com/sahastra16/tws-e-commerce-app](https://github.com/sahastra16/tws-e-commerce-app)  
+🔗 LinkedIn: [https://www.linkedin.com/in/sahastra/](https://www.linkedin.com/in/sahastra/)

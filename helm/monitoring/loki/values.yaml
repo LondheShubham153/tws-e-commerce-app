@@ -1,0 +1,205 @@
+## Loki Helm Values
+# This file configures the Loki instance for EasyShop application log collection
+
+# Image settings
+image:
+  repository: grafana/loki
+  tag: 2.9.2
+  pullPolicy: IfNotPresent
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClassName: ebs-sc
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 3100
+
+# Resources
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Loki configuration
+config:
+  auth_enabled: false
+  server:
+    http_listen_port: 3100
+  ingester:
+    lifecycler:
+      ring:
+        kvstore:
+          store: inmemory
+        replication_factor: 1
+      final_sleep: 0s
+    chunk_idle_period: 5m
+    chunk_retain_period: 30s
+    max_transfer_retries: 0
+  schema_config:
+    configs:
+      - from: 2020-10-24
+        store: boltdb-shipper
+        object_store: filesystem
+        schema: v11
+        index:
+          prefix: index_
+          period: 24h
+  storage_config:
+    boltdb_shipper:
+      active_index_directory: /data/loki/index
+      cache_location: /data/loki/index_cache
+      cache_ttl: 24h
+      shared_store: filesystem
+    filesystem:
+      directory: /data/loki/chunks
+  limits_config:
+    enforce_metric_name: false
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+    max_entries_limit_per_query: 5000
+  chunk_store_config:
+    max_look_back_period: 0s
+  table_manager:
+    retention_deletes_enabled: false
+    retention_period: 0s
+  compactor:
+    working_directory: /data/loki/compactor
+    shared_store: filesystem
+
+# Service account settings
+serviceAccount:
+  create: true
+  name: loki
+
+# SecurityContext
+securityContext:
+  fsGroup: 10001
+  runAsGroup: 10001
+  runAsNonRoot: true
+  runAsUser: 10001
+
+# Init containers to setup directories and permissions
+initContainers:
+  - name: init-chown-data
+    image: busybox:1.35
+    imagePullPolicy: IfNotPresent
+    command: ["chown", "-R", "10001:10001", "/data"]
+    volumeMounts:
+      - name: storage
+        mountPath: "/data"
+    securityContext:
+      runAsUser: 0
+
+# RBAC configuration
+rbac:
+  create: true
+  pspEnabled: false
+
+# Promtail configuration for sending logs to Loki
+promtail:
+  enabled: true
+  config:
+    clients:
+      - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
+    snippets:
+      pipelineStages:
+        - docker: {}
+        - match:
+            selector: '{app="easyshop-frontend"}'
+            stages:
+              - regex:
+                  expression: '.*level=(?P<level>[a-zA-Z]+).*'
+              - labels:
+                  level:
+        - match:
+            selector: '{app="easyshop-backend"}'
+            stages:
+              - regex:
+                  expression: '.*level=(?P<level>[a-zA-Z]+).*'
+              - labels:
+                  level:
+      scrapeConfigs: |
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+          relabel_configs:
+            - source_labels:
+                - __meta_kubernetes_pod_controller_name
+              regex: ([0-9a-z-.]+?)(-[0-9a-f]{8,10})?
+              action: replace
+              target_label: __tmp_controller_name
+            - source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_name
+                - __meta_kubernetes_pod_label_app
+                - __tmp_controller_name
+              regex: ^;*([^;]+)(;.*)?$
+              action: replace
+              target_label: app
+            - source_labels:
+                - __meta_kubernetes_pod_label_app_kubernetes_io_component
+                - __meta_kubernetes_pod_label_component
+              regex: ^;*([^;]+)(;.*)?$
+              action: replace
+              target_label: component
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_node_name
+              target_label: node_name
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: replace
+              replacement: $1
+              separator: /
+              source_labels:
+              - namespace
+              - app
+              target_label: job
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_name
+              target_label: pod
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_container_name
+              target_label: container
+            - action: replace
+              replacement: /var/log/pods/*$1/*.log
+              separator: /
+              source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+              target_label: __path__
+            - action: replace
+              regex: true
+              source_labels:
+              - __meta_kubernetes_pod_label_easyshop_ignoreLogCollect
+              replacement: true
+              target_label: __drop__
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  serviceAccount:
+    create: true
+    name: promtail
+  tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+      operator: Exists
+  securityContext:
+    readOnlyRootFilesystem: true
+    runAsGroup: 10001
+    runAsNonRoot: true
+    runAsUser: 10001 

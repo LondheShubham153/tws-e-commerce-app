@@ -1,0 +1,203 @@
+## Prometheus Rules Helm Values
+# This file configures the Prometheus rules for EasyShop application monitoring
+
+# Additional labels to add to all rules
+additionalLabels:
+  team: platform
+  environment: production
+
+# Default namespace for the rules
+namespace: monitoring
+
+# Prometheus rules
+groups:
+  # Node and infrastructure rules
+  - name: node-rules
+    rules:
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Node {{ $labels.instance }} has been down for more than 3 minutes."
+          
+      - alert: NodeHighCPUUsage
+        expr: (1 - avg by(instance)(irate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "Node {{ $labels.instance }} has high CPU usage (>85%) for more than 5 minutes."
+          
+      - alert: NodeHighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Node {{ $labels.instance }} has high memory usage (>90%) for more than 5 minutes."
+          
+      - alert: NodeHighDiskUsage
+        expr: 100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="rootfs"} * 100) / node_filesystem_size_bytes{mountpoint="/",fstype!="rootfs"}) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Node {{ $labels.instance }} has high disk usage (>85%) for more than 5 minutes."
+          
+  # Kubernetes rules
+  - name: kubernetes-rules
+    rules:
+      - alert: PodCrashLooping
+        expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash looping"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently."
+          
+      - alert: PodNotReady
+        expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown"}) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} not ready"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in a non-ready state for more than 15 minutes."
+          
+      - alert: DeploymentReplicasMismatch
+        expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Deployment {{ $labels.deployment }} replicas mismatch"
+          description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has mismatched replicas for more than 15 minutes."
+          
+  # EasyShop API rules
+  - name: easyshop-api-rules
+    rules:
+      - alert: EasyShopAPIHighErrorRate
+        expr: sum(rate(http_requests_total{service="easyshop-api",status=~"5.."}[5m])) / sum(rate(http_requests_total{service="easyshop-api"}[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: easyshop-api
+        annotations:
+          summary: "EasyShop API high error rate"
+          description: "EasyShop API is experiencing high error rate (>5%) for more than 5 minutes."
+          
+      - alert: EasyShopAPIHighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="easyshop-api"}[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: easyshop-api
+        annotations:
+          summary: "EasyShop API high response time"
+          description: "EasyShop API 95th percentile response time is above 2 seconds for more than 5 minutes."
+          
+      - alert: EasyShopAPIHighRequestRate
+        expr: sum(rate(http_requests_total{service="easyshop-api"}[5m])) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: easyshop-api
+        annotations:
+          summary: "EasyShop API high request rate"
+          description: "EasyShop API is experiencing high request rate (>1000 req/s) for more than 5 minutes."
+          
+  # EasyShop Database rules
+  - name: easyshop-db-rules
+    rules:
+      - alert: EasyShopDBHighCPUUsage
+        expr: avg by(instance)(rate(pg_exporter_process_cpu_seconds_total{service="easyshop-db"}[5m])) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: easyshop-db
+        annotations:
+          summary: "EasyShop DB high CPU usage"
+          description: "EasyShop database is experiencing high CPU usage (>80%) for more than 5 minutes."
+          
+      - alert: EasyShopDBHighConnectionCount
+        expr: pg_stat_activity_count{datname="easyshop"} > 150
+        for: 5m
+        labels:
+          severity: warning
+          service: easyshop-db
+        annotations:
+          summary: "EasyShop DB high connection count"
+          description: "EasyShop database has a high number of connections (>150) for more than 5 minutes."
+          
+      - alert: EasyShopDBHighReplicationLag
+        expr: pg_replication_lag{service="easyshop-db"} > 300
+        for: 5m
+        labels:
+          severity: critical
+          service: easyshop-db
+        annotations:
+          summary: "EasyShop DB high replication lag"
+          description: "EasyShop database replication lag is high (>300s) for more than 5 minutes."
+          
+      - alert: EasyShopDBLowDiskSpace
+        expr: pg_database_size_bytes{datname="easyshop"} / pg_settings_setting_bytes{name="max_connections"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: easyshop-db
+        annotations:
+          summary: "EasyShop DB low disk space"
+          description: "EasyShop database is using more than 80% of allocated disk space."
+          
+  # EasyShop Frontend rules
+  - name: easyshop-frontend-rules
+    rules:
+      - alert: EasyShopFrontendHighErrorRate
+        expr: sum(rate(http_requests_total{service="easyshop-frontend",status=~"5.."}[5m])) / sum(rate(http_requests_total{service="easyshop-frontend"}[5m])) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: easyshop-frontend
+        annotations:
+          summary: "EasyShop Frontend high error rate"
+          description: "EasyShop Frontend is experiencing high error rate (>5%) for more than 5 minutes."
+          
+      - alert: EasyShopFrontendHighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="easyshop-frontend"}[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: easyshop-frontend
+        annotations:
+          summary: "EasyShop Frontend high response time"
+          description: "EasyShop Frontend 95th percentile response time is above 1 second for more than 5 minutes."
+          
+  # SLA/SLO rules
+  - name: slo-rules
+    rules:
+      - alert: EasyShopAPIAvailabilityLow
+        expr: 100 * (1 - avg_over_time(up{job="easyshop-api"}[24h])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: easyshop-api
+        annotations:
+          summary: "EasyShop API availability below SLA"
+          description: "EasyShop API availability over 24h is below 99.9% SLA."
+          
+      - alert: EasyShopLatencyAboveSLO
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=~"easyshop-.*"}[24h])) by (le, service)) > 3
+        for: 10m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "EasyShop latency exceeding SLO"
+          description: "Service {{ $labels.service }} has 99th percentile latency higher than 3s, exceeding our SLO target." 

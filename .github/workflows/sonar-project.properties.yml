@@ -12,7 +12,7 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -113,15 +113,15 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'github-actions@github.com'
-          
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
           if [[ -n $(git status -s) ]]; then
             git add kubernetes/*.yaml
             git commit -m "Update image tags to ${{ github.run_number }} and ensure correct domain [ci skip]"
             git push
           else
             echo "No changes to commit"
+          fi
 
   deploy-to-kind:
     needs: [build-and-test, update-k8s-manifests]
@@ -131,6 +131,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
 
       - name: Create Kind Cluster
         run: |
@@ -151,8 +162,8 @@ jobs:
           # Create namespace if it doesn't exist
           kubectl create namespace easyshop || true
           
-          # Apply Kubernetes manifests
-          kubectl apply -f kubernetes/00-cluster-issuer.yml
+          # Apply Kubernetes manifests in order
+          kubectl apply -f kubernetes/00-cluster-issuer.yml || true
           kubectl apply -f kubernetes/01-namespace.yaml
           kubectl apply -f kubernetes/02-mongodb-pv.yaml
           kubectl apply -f kubernetes/03-mongodb-pvc.yaml

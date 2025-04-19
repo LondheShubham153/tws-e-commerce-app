@@ -26,8 +26,8 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Adding non root user & group for security and best practice
-RUN addgroup easyshop
-RUN adduser -G easyshop -s /bin/sh easyshop
+#RUN addgroup easyshop
+#RUN adduser -G easyshop -s /bin/sh easyshop
 
 # Copy necessary files from builder stage
 COPY --from=builder /app/.next/standalone ./
@@ -35,10 +35,10 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Setting the file ownership to the non-root user
-RUN chown -R easyshop:easyshop /app
+#RUN chown -R easyshop:easyshop /app
 
 # Switching to the non-root user
-USER easyshop
+#USER easyshop
 
 # Set environment variables
 ENV NODE_ENV=production

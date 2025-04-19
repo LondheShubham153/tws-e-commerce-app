@@ -132,91 +132,90 @@ jobs:
           sudo mv kubectl /u    - name: Checkout co  uses: actions/checkout@v4    - name: Install k  run: |    sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"    sudo chmod +x kubectl 
           sudo mv kubectl /usr/local/bin/
 
-    deploy-to-eks:
-      needs: [build-and-test]
-      runs-on: ubuntu-latest
-      if: github.ref == 'refs/heads/master' 
-      permissions:
-        id-token: write
-        contents: read
+  deploy-to-eks:
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' 
+    permissions:
+      id-token: write
+      contents: read
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Configure AWS credentials
-          uses: aws-actions/configure-aws-credentials@v4
-          with:
-            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-        - name: Install kubectl
-          run: |
-            sudo curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo chmod +x kubectl
-            sudo mv kubectl /usr/local/bin/
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
 
-        - name: Update kube config
-          run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+      - name: Update kube config
+        run: aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+        
+      - name: Deploy to EKS
+        run: |
+          # Create namespace if it doesn't exist
+          kubectl create namespace easyshop || true
+
+          # Create Docker registry secret
+          kubectl create secret docker-registry regcred \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
+            --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
+            --docker-email=${{ secrets.DOCKERHUB_EMAIL }} \
+            -n easyshop || true
+
+          # Apply Kubernetes manifests in order
+          kubectl apply -f kubernetes/00-cluster-issuer.yml || true
+          kubectl apply -f kubernetes/01-namespace.yaml
+          kubectl apply -f kubernetes/02-mongodb-pv.yaml
+          kubectl apply -f kubernetes/03-mongodb-pvc.yaml
+          kubectl apply -f kubernetes/04-configmap.yaml
+          kubectl apply -f kubernetes/05-secrets.yaml
+          kubectl apply -f kubernetes/06-mongodb-service.yaml
+          kubectl apply -f kubernetes/07-mongodb-statefulset.yaml
+          kubectl apply -f kubernetes/08-easyshop-deployment.yaml
+          kubectl apply -f kubernetes/09-easyshop-service.yaml
+          kubectl apply -f kubernetes/10-ingress.yaml
+          kubectl apply -f kubernetes/11-hpa.yaml
+          kubectl apply -f kubernetes/12-migration-job.yaml
+
+      - name: Wait for deployment rollout
+        run: |
+          kubectl rollout status deployment/easyshop -n easyshop --timeout=300s
           
-        - name: Deploy to EKS
-          run: |
-            # Create namespace if it doesn't exist
-            kubectl create namespace easyshop || true
+      - name: Verify deployment
+        run: |
+          echo "Getting pod status..."
+          kubectl get pods -n easyshop
+          
+          echo "Getting services..."
+          kubectl get svc -n easyshop
+          
+          echo "Getting ingress..."
+          kubectl get ingress -n easyshop
 
-            # Create Docker registry secret
-            kubectl create secret docker-registry regcred \
-              --docker-server=https://index.docker.io/v1/ \
-              --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
-              --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
-              --docker-email=${{ secrets.DOCKERHUB_EMAIL }} \
-              -n easyshop || true
-
-            # Apply Kubernetes manifests in order
-            kubectl apply -f kubernetes/00-cluster-issuer.yml || true
-            kubectl apply -f kubernetes/01-namespace.yaml
-            kubectl apply -f kubernetes/02-mongodb-pv.yaml
-            kubectl apply -f kubernetes/03-mongodb-pvc.yaml
-            kubectl apply -f kubernetes/04-configmap.yaml
-            kubectl apply -f kubernetes/05-secrets.yaml
-            kubectl apply -f kubernetes/06-mongodb-service.yaml
-            kubectl apply -f kubernetes/07-mongodb-statefulset.yaml
-            kubectl apply -f kubernetes/08-easyshop-deployment.yaml
-            kubectl apply -f kubernetes/09-easyshop-service.yaml
-            kubectl apply -f kubernetes/10-ingress.yaml
-            kubectl apply -f kubernetes/11-hpa.yaml
-            kubectl apply -f kubernetes/12-migration-job.yaml
-
-        - name: Wait for deployment rollout
-          run: |
-            kubectl rollout status deployment/easyshop -n easyshop --timeout=300s
-            
-        - name: Verify deployment
-          run: |
-            echo "Getting pod status..."
-            kubectl get pods -n easyshop
-            
-            echo "Getting services..."
-            kubectl get svc -n easyshop
-            
-            echo "Getting ingress..."
-            kubectl get ingress -n easyshop
-
-        - name: Check application health
-          run: |
-            # Get LoadBalancer URL
-            LB_HOSTNAME=$(kubectl get svc -n ingress-nginx nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo "LoadBalancer URL: $LB_HOSTNAME"
-            
-            # Wait for DNS propagation and perform health check
-            for i in {1..30}; do
-              if curl -s -o /dev/null -w "%{http_code}" "https://$LB_HOSTNAME" | grep -q "200\|301\|302"; then
-                echo "Application is healthy!"
-                exit 0
-              fi
-              echo "Waiting for application to be ready... ($i/30)"
-              sleep 10
-            done
-            echo "Application health check failed"
-            exit 1
+      - name: Check application health
+        run: |
+          # Get LoadBalancer URL
+          LB_HOSTNAME=$(kubectl get svc -n ingress-nginx nginx-ingress-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "LoadBalancer URL: $LB_HOSTNAME"
+          
+          # Wait for DNS propagation and perform health check
+          for i in {1..30}; do
+            if curl -s -o /dev/null -w "%{http_code}" "https://$LB_HOSTNAME" | grep -q "200\|301\|302"; then
+              echo "Application is healthy!"
+              exit 0
+            fi
+            echo "Waiting for application to be ready... ($i/30)"
+            sleep 10
+          done
+          echo "Application health check failed"
+          exit 1

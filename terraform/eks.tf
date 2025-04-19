@@ -56,7 +56,19 @@ module "eks" {
       }
     }
   }
- 
+
+  # Add the custom security group rule for node port access
+  node_security_group_additional_rules = {
+    allow_nodeport_access = {
+      description = "Allow NodePort access for ArgoCD, Grafana, Prometheus"
+      protocol    = "tcp"
+      from_port   = 30000
+      to_port     = 32000
+      type        = "ingress"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
   tags = local.tags
 
 

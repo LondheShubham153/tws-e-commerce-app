@@ -1,0 +1,29 @@
+FROM node:18.19-alpine3.18
+
+# Set working directory
+WORKDIR /app
+
+# Install necessary development dependencies
+RUN apk add --no-cache python3 make g++ curl
+
+# Install global development tools
+RUN npm install -g nodemon
+
+# Create non-root user with specific permissions
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs \
+    && chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Add health check
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Command to run the application in development mode
+# The actual source code will be mounted as volume at runtime
+CMD ["sh", "-c", "npm install && npm run dev"] 

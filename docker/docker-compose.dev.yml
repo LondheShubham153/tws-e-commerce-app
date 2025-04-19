@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:4.4
+    container_name: easyshop-mongodb-dev
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_dev:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    environment:
+      - MONGO_INITDB_DATABASE=easyshop
+    networks:
+      - easyshop-dev-network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: easyshop-app-dev
+    volumes:
+      - ../:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../.env.local
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongodb:27017/easyshop
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - easyshop-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  easyshop-dev-network:
+    name: easyshop-dev-network
+
+volumes:
+  mongodb_data_dev:
+    name: mongodb_data_dev 

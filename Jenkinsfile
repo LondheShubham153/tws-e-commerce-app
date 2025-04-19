@@ -5,10 +5,11 @@ pipeline {
     
     environment {
         // Update the main app image name to match the deployment file
-        DOCKER_IMAGE_NAME = 'trainwithshubham/easyshop-app'
-        DOCKER_MIGRATION_IMAGE_NAME = 'trainwithshubham/easyshop-migration'
+        DOCKER_IMAGE_NAME = 'ahamadb224/easyshop-app'
+        DOCKER_MIGRATION_IMAGE_NAME = 'ahamadb224/easyshop-migration'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         GITHUB_CREDENTIALS = credentials('github-credentials')
+        SONAR_TOKEN = credentials('sonarqube-credentials')
         GIT_BRANCH = "master"
     }
     
@@ -24,7 +25,22 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone("https://github.com/LondheShubham153/tws-e-commerce-app.git","master")
+                    clone("https://github.com/ahamadb224/tws-e-commerce-app.git", "master")
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube Server') { // Name must match Jenkins > "Configure System"
+                    withCredentials([string(credentialsId: 'sonarqube-credentials', variable: 'SONAR_TOKEN')]){
+                        sh '''
+                          sonar-scanner \
+                            -Dsonar.projectKey=easyshop-app \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://34.224.213.239:9000 \
+                        '''
+                    }
                 }
             }
         }
@@ -115,10 +131,19 @@ pipeline {
                         manifestsPath: 'kubernetes',
                         gitCredentials: 'github-credentials',
                         gitUserName: 'Jenkins CI',
-                        gitUserEmail: 'shubhamnath5@gmail.com'
+                        gitUserEmail: 'ahamadb224@gmail.com'
                     )
                 }
             }
+        }
+    }
+    post {
+        always {
+            emailext body: "Build Status: ${currentBuild.result}\nBuild URL: ${currentBuild.absoluteUrl}\n\nCheck the attached log for details.",
+                     subject: '[Jenkins] Job ${JOB_NAME} (${BUILD_NUMBER}) - ${BUILD_STATUS}',
+                     to: 'baig.khadeer@gmail.com',
+                     attachLog: true,
+                     mimeType: 'text/plain'
         }
     }
 }

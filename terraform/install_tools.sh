@@ -42,3 +42,24 @@ sudo snap install helm --classic
 
 # Kubectl installation
 sudo snap install kubectl --classic
+
+#Postgresql Installation for sonarqube
+sudo apt install -y postgresql-common postgresql -y
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+
+#SONARQUBE INSTALLATION
+#Since Java already installed for Jenkins, no need to install Java
+#Few configuration changes need to change after VM got created. Look into Readme file
+sudo apt update
+sudo apt install unzip -y
+sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-25.2.0.102705.zip
+unzip sonarqube-25.2.0.102705.zip
+sudo mv sonarqube-25.2.0.102705/ /opt/sonarqube
+sudo adduser --system --no-create-home --group --disabled-login sonarqube
+sudo chown -R sonarqube:sonarqube /opt/sonarqube
+
+#SONARSCANNER INSTALLATION
+wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.0.1.4817-linux-x64.zip
+unzip sonar-scanner-cli-7.0.1.4817-linux-x64.zip
+sudo mv sonar-scanner-7.0.1.4817-linux-x64/  /opt/sonarscanner

@@ -57,10 +57,32 @@ resource "aws_security_group" "allow_user_to_connect" {
   }
 
   ingress {
-    description = "port 8080 allow"
+    description = "port for jenkins"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "port for sonarqube"
+    from_port   = 9000
+    to_port     = 9000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "port for postgresql"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "port for email notification"
+    from_port   = 465
+    to_port     = 465
+    protocol    = "smtp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -79,7 +101,7 @@ resource "aws_instance" "testinstance" {
     Name = "Jenkins-Automate"
   }
   root_block_device {
-    volume_size = 20
+    volume_size = 35
     volume_type = "gp3"
   }
   

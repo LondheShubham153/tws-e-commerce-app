@@ -20,16 +20,7 @@ EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, Type
 - 💳 Secure Checkout
 - 👤 User Profiles & Order History
 
----
 
-
-That **blank line** after the Mermaid block ensures GitHub stops parsing the diagram before continuing with markdown.
-
----
-
-### ✅ Final Working Mermaid Snippet
-
-Here’s your fully cleaned-up block:
 
 ```markdown
 ## ⚙️ DevOps Architecture (Production)

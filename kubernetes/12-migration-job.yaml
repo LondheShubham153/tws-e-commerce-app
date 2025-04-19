@@ -7,10 +7,11 @@ spec:
   template:
     spec:
       containers:
-      - name: migration
-        image: joakim077/easyshop-migration:1
-        imagePullPolicy: Always
-        env:
-        - name: MONGODB_URI
-          value: "mongodb://mongodb-service:27017/easyshop"
+        - name: migration
+          image: >-
+            joakim077/easyshop-migration:97b1f22aceee8fbcd58f002aa84134f7d18d3a17
+          imagePullPolicy: Always
+          env:
+            - name: MONGODB_URI
+              value: mongodb://mongodb-service:27017/easyshop
       restartPolicy: OnFailure

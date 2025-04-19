@@ -1,77 +1,40 @@
-# 🛍️ EasyShop - Modern E-commerce Platform
 
-[![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-8.1.1-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
-[![Redux](https://img.shields.io/badge/Redux-2.2.1-purple?style=flat-square&logo=redux)](https://redux.js.org/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+# 🛍️ EasyShop – Full Stack E-commerce App
 
-EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, TypeScript, and MongoDB. It features a beautiful UI with Tailwind CSS, secure authentication, real-time cart updates, and a seamless shopping experience.
+A modern full-stack e-commerce application built with **Next.js**, **TypeScript**, **MongoDB**, **Tailwind CSS**, and deployed with **Docker**, **Jenkins**, and **Argo CD** on **AWS EKS**.
 
-## ✨ Features
+---
 
-- 🎨 Modern and responsive UI with dark mode support
-- 🔐 Secure JWT-based authentication
-- 🛒 Real-time cart management with Redux
-- 📱 Mobile-first design approach
-- 🔍 Advanced product search and filtering
-- 💳 Secure checkout process
-- 📦 Multiple product categories
-- 👤 User profiles and order history
-- 🌙 Dark/Light theme support
-
-## 🏗️ Architecture
-
-EasyShop follows a three-tier architecture pattern:
-
-### 1. Presentation Tier (Frontend)
-- Next.js React Components
-- Redux for State Management
-- Tailwind CSS for Styling
-- Client-side Routing
-- Responsive UI Components
-
-### 2. Application Tier (Backend)
-- Next.js API Routes
-- Business Logic
-- Authentication & Authorization
-- Request Validation
-- Error Handling
-- Data Processing
-
-### 3. Data Tier (Database)
-- MongoDB Database
-- Mongoose ODM
-- Data Models
-- CRUD Operations
-- Data Validation
+## ⚙️ DevOps Architecture (Production)
 
 ```mermaid
 graph LR
   A[GitHub Repo] --> B[Jenkins CI]
-  B --> C[Git Update: Manifest]
-  C --> D["ArgoCD - GitOps"]
+  B --> C[Git Update: Manifest Repo]
+  C --> D[ArgoCD (GitOps)]
   D --> E[EKS Cluster]
   E --> F[EasyShop App]
-  E --> G["Prometheus + Grafana"]
+  E --> G[Prometheus + Grafana]
+```
+
+---
 
 ## 🚀 Getting Started
 
 ### 🐳 Docker Setup Guide
 
-This guide will help you run **EasyShop** using Docker containers.  
-No local Node.js or MongoDB installation required!
+This guide will help you run EasyShop using Docker containers. No local Node.js or MongoDB installation required!
 
 ---
 
 ### ✅ Prerequisites
 
-- 🐳 [Docker](https://docs.docker.com/get-docker/) installed on your machine  
-- 💻 Basic understanding of terminal/command line
+- Install [Docker](https://docs.docker.com/get-docker/) on your machine
+- Basic understanding of terminal/command line
 
 ---
 
-### ⚙️ Step 1: Environment Setup
+### 🔧 Step 1: Environment Setup
 
 Create a file named `.env.local` in the root directory with the following content:
 
@@ -88,21 +51,21 @@ NEXTAUTH_SECRET=your-nextauth-secret-key
 JWT_SECRET=your-jwt-secret-key
 ```
 
-#### 🔐 To generate secure secret keys:
+To generate secure keys:
 
 ```bash
-# Generate NEXTAUTH_SECRET
+# For NEXTAUTH_SECRET
 openssl rand -base64 32
 
-# Generate JWT_SECRET
+# For JWT_SECRET
 openssl rand -hex 32
 ```
 
 ---
 
-### 🚦 Step 2: Running the Application
+### ▶️ Step 2: Running the Application
 
-#### 🧩 Option 1: Using Docker Compose (Recommended)
+#### 🔹 Option 1: Using Docker Compose (Recommended)
 
 ```bash
 # Start all services
@@ -117,60 +80,70 @@ docker compose down
 
 ---
 
-#### ⚙️ Option 2: Manual Docker Commands
+#### 🔹 Option 2: Manual Docker Commands
 
-1. **Create a Docker network:**
+1. Create a Docker network:
 
 ```bash
 docker network create easyshop-network
 ```
 
-2. **Start MongoDB:**
+2. Start MongoDB:
 
 ```bash
-docker run -d   --name easyshop-mongodb   --network easyshop-network   -p 27017:27017   -v mongodb_data:/data/db   mongo:latest
+docker run -d \
+  --name easyshop-mongodb \
+  --network easyshop-network \
+  -p 27017:27017 \
+  -v mongodb_data:/data/db \
+  mongo:latest
 ```
 
-3. **Build the main application:**
+3. Build the main app:
 
 ```bash
 docker build -t easyshop .
 ```
 
-4. **Build and run data migration:**
+4. Build & run migration:
 
 ```bash
-# Build migration image
 docker build -t easyshop-migration -f scripts/Dockerfile.migration .
 
-# Run migration
-docker run --rm   --network easyshop-network   --env-file .env.local   easyshop-migration
+docker run --rm \
+  --network easyshop-network \
+  --env-file .env.local \
+  easyshop-migration
 ```
 
-5. **Start the EasyShop app:**
+5. Run the app:
 
 ```bash
-docker run -d   --name easyshop   --network easyshop-network   -p 3000:3000   --env-file .env.local   easyshop:latest
+docker run -d \
+  --name easyshop \
+  --network easyshop-network \
+  -p 3000:3000 \
+  --env-file .env.local \
+  easyshop:latest
 ```
 
 ---
 
-### 🌐 Accessing the Application
+### 🌐 Accessing the App
 
-> Open your browser and visit:  
-> [http://localhost:3000](http://localhost:3000)
+Visit: [http://localhost:3000](http://localhost:3000)
 
-You should see the **EasyShop** homepage!
+You should see the EasyShop homepage!
 
 ---
 
-### 🔍 Useful Docker Commands
+### 🧰 Useful Docker Commands
 
 ```bash
 # View running containers
 docker ps
 
-# View logs
+# Logs
 docker logs easyshop
 docker logs easyshop-mongodb
 
@@ -188,60 +161,49 @@ docker network rm easyshop-network
 
 ## 🧪 Testing
 
-> ⚠️ _Coming soon: Unit tests and E2E tests using Jest and Cypress_
+> 📌 Coming soon: Unit & E2E tests using Jest and Cypress
 
 ---
 
-## 🛠️ Troubleshooting
+## 🔧 Troubleshooting
 
-### ⚠️ Dynamic Server Usage Warnings
+### ❗ Build Errors
 
-```bash
-Error: Dynamic server usage: Page couldn't be rendered statically
-```
+**Error**: `Dynamic server usage: Page couldn't be rendered statically`  
+**Solution**: Safe to ignore. These warnings appear during build due to dynamic routes.
 
-**Solution:**  
-This is expected for dynamic routes and API endpoints. These warnings won’t affect functionality.
+### ❗ MongoDB Connection Failed
 
----
-
-### ❌ MongoDB Connection Issues
-
-```bash
-Error: MongoDB connection failed
-```
-
-**Solutions:**
+**Solution**:
 
 - Ensure MongoDB is running
-- Verify MongoDB URI in `.env.local`
-- Test the connection using [MongoDB Compass](https://www.mongodb.com/products/compass)
+- Verify connection string in `.env.local`
+- Try connecting via MongoDB Compass
 
 ---
 
 ## 💡 Development Tips
 
-- Clear Next.js build cache:  
-  `rm -rf .next`
-- Run `npm install` after pulling changes
+- Clear `.next` folder: `rm -rf .next`
+- Run `npm install` after pulling updates
 - Use Node.js version **18+**
-- Double-check environment variables
+- Check environment variables
 
 ---
 
 ## 📦 Project Structure
 
-```bash
+```
 easyshop/
 ├── src/
 │   ├── app/              # Next.js App Router pages
 │   ├── components/       # Reusable React components
-│   ├── lib/              # Utilities and config
-│   │   ├── auth/         # Authentication logic
-│   │   ├── db/           # MongoDB config
+│   ├── lib/              # Utilities and configs
+│   │   ├── auth/         # Auth logic
+│   │   ├── db/           # DB config
 │   │   └── features/     # Redux slices
 │   ├── types/            # TypeScript types
-│   └── styles/           # Global styles + Tailwind CSS
+│   └── styles/           # Tailwind + global styles
 ├── public/               # Static assets
 └── scripts/              # Database migration scripts
 ```
@@ -250,30 +212,24 @@ easyshop/
 
 ## 🤝 Contributing
 
-We welcome contributions! Follow these steps:
+We welcome contributions! To contribute:
 
 ```bash
-# 1. Fork the repository
-# 2. Create your branch
-git checkout -b feature/amazing-feature
-
-# 3. Make your changes
-# 4. Commit your changes
-git commit -m "Add amazing feature"
-
-# 5. Push your changes
-git push origin feature/amazing-feature
-
-# 6. Open a Pull Request 🎉
+# Fork & clone repo
+git checkout -b feature/your-feature
+# Make changes
+git commit -m "Add your feature"
+git push origin feature/your-feature
+# Open a PR
 ```
 
-📌 _Check our **Contributing Guidelines** for more details_
+> 💡 Check our `CONTRIBUTING.md` for guidelines.
 
 ---
 
 ## 📝 License
 
-This project is licensed under the **MIT License** – see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -289,8 +245,8 @@ This project is licensed under the **MIT License** – see the [LICENSE](./LICEN
 
 ## 📫 Contact
 
-For feedback or questions, open an issue or reach out:
+For questions or feedback, please reach out:
 
-**Made with ❤️ by [@sahastra16](https://github.com/sahastra16)**  
-🔗 Project: [https://github.com/sahastra16/tws-e-commerce-app](https://github.com/sahastra16/tws-e-commerce-app)  
-🔗 LinkedIn: [https://www.linkedin.com/in/sahastra/](https://www.linkedin.com/in/sahastra/)
+- Made with ❤️ by [@sahastra16](https://github.com/sahastra16)
+- Project Repo: [EasyShop GitHub](https://github.com/sahastra16/tws-e-commerce-app)
+- LinkedIn: [Sahastra's Profile](https://www.linkedin.com/in/sahastra/)

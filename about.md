@@ -26,12 +26,13 @@ EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, Type
 
 ```mermaid
 graph LR
-A[GitHub Repo] --> B[Jenkins CI]
-B --> C[Git Update: Manifest]
-C --> D[ArgoCD (GitOps)]
-D --> E[EKS Cluster]
-E --> F[EasyShop App]
-E --> G[Prometheus & Grafana]
+  A[GitHub Repo] --> B[Jenkins CI]
+  B --> C[Git Update: Manifest]
+  C --> D[ArgoCD (GitOps)]
+  D --> E[EKS Cluster]
+  E --> F[EasyShop App]
+  E --> G[Prometheus & Grafana]
+
 
 🔧 Tools & Stack
 Terraform – Infra as Code for Jenkins, EKS, IAM, VPC

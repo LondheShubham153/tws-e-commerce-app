@@ -78,8 +78,12 @@ sudo apt install unzip
 unzip awscliv2.zip
 sudo ./aws/install
 ```
+###  Install AWS CLI in Windows 'powershell'
+```msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2.msi```
+
 
  ```aws configure```
+
 
 > #### This will prompt you to enter:<br/>
 - **AWS Access Key ID:**<br/>
@@ -209,7 +213,7 @@ sudo systemctl status jenkins
 > Scroll to Global Pipeline Libraries section
 >
 > - **Add a New Shared Library:** 
-> - **Name:** shared
+> - **Name:** Shared
 > - **Default Version:** main
 > - **Project Repository URL:** `https://github.com/<your user-name/jenkins-shared-libraries`.
 >
@@ -492,6 +496,51 @@ kubectl get svc nginx-ingress-ingress-nginx-controller -n ingress-nginx -o jsonp
 >> kubectl describe challenges -n easyshop
 >> ```
 
+### **Install Metric Server:**
+> 1. **install thru manifest:** :
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+>2. **check the pods:** :
+```bash
+kubectl get deployment metrics-server -n kube-system
+```
+### **Enable Monitoring with Kube-prometheus-stack:**
+> 1. **Add the repo:** :
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+```
+> 2. **Install the chart:** :
+```bash
+helm install my-kube-prometheus-stack oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack --version 70.7.0
+```
+> 3. **check the services:** :
+```bash
+kubectl get svc
+```
+
+> 4. **Edit the Grafana service:** :
+```bash
+kubectl edit svc <your-grafana-svc>
+```
+> 5. **edit the "type":** :
+```bash
+ NodePort
+```
+> 6. **Check the service to see the nodeport:** :
+```bash
+ kubectl get svc
+```
+> 7 . **Copy your EKS node's public IP and paste it in the browser with the port:** :
+```bash
+<node-ip>:port_number
+```
+> 8. **You should see the Grafana login page:** :
+```bash
+user: admin
+password: prom-operator
+```
 ## **Congratulations!** <br/>
 ![EasyShop Website Screenshot](./public/Deployed.png)
 

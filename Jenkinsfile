@@ -4,12 +4,17 @@ pipeline {
     agent any
     
     environment {
+
         // Update the main app image name to match the deployment file
-        DOCKER_IMAGE_NAME = 'trainwithshubham/easyshop-app'
-        DOCKER_MIGRATION_IMAGE_NAME = 'trainwithshubham/easyshop-migration'
+        DOCKER_HUB_USERNAME = 'delight2025'
+        DOCKER_IMAGE_NAME = "${DOCKER_HUB_USERNAME}/easyshop-app"
+        DOCKER_MIGRATION_IMAGE_NAME = "${DOCKER_HUB_USERNAME}/easyshop-migration"
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
-        GITHUB_CREDENTIALS = credentials('github-credentials')
-        GIT_BRANCH = "master"
+        GITHUB_CREDENTIALS = credentials('gitHub Credentials')
+        GIT_REPO = "https://github.com/anandghangoria1/tws-e-commerce-app.git"
+        GIT_BRANCH = "add-terraform-modules"
+        SONAR_HOST_URL = 'http://34.245.124.248:9000/'
+        SONAR_AUTH_TOKEN = credentials('sonarqube')
     }
     
     stages {
@@ -24,7 +29,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone("https://github.com/LondheShubham153/tws-e-commerce-app.git","master")
+                    clone(env.GIT_REPO,env.GIT_BRANCH)
                 }
             }
         }
@@ -105,7 +110,10 @@ pipeline {
                 }
             }
         }
-        
+
+
+    
+
         // Add this new stage
         stage('Update Kubernetes Manifests') {
             steps {
@@ -113,10 +121,20 @@ pipeline {
                     update_k8s_manifests(
                         imageTag: env.DOCKER_IMAGE_TAG,
                         manifestsPath: 'kubernetes',
-                        gitCredentials: 'github-credentials',
+                        gitCredentials: 'gitHub Credentials',
                         gitUserName: 'Jenkins CI',
-                        gitUserEmail: 'shubhamnath5@gmail.com'
+                        gitUserEmail: 'a9452119605@gmail.com'
                     )
+                }
+            }
+        }
+
+         stage('SonarQube Analysis') {
+            steps {
+                script {
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'sonar-scanner -Dsonar.projectKey=easyshop -Dsonar.sources=src'
+                    }
                 }
             }
         }

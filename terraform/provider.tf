@@ -10,7 +10,7 @@ locals {
   tags = {
     example = local.name
   }
-
+  worker_node_name = "tws-eks-worker" 
 }
 
 provider "aws" {

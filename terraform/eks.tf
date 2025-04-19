@@ -47,9 +47,9 @@ module "eks" {
       use_custom_launch_template = false  # Important to apply disk size!
 
       tags = {
-        Name = "tws-demo-ng"
-        Environment = "dev"
-        ExtraTag = "e-commerce-app"
+      Name        = local.worker_node_name
+      Environment = "dev"
+      ExtraTag    = "e-commerce-app"
       }
     }
   }
@@ -70,4 +70,15 @@ data "aws_instances" "eks_nodes" {
   }
 
   depends_on = [module.eks]
+}
+
+
+resource "aws_security_group_rule" "custom_ports" {
+  type              = "ingress"
+  from_port         = 3000
+  to_port           = 32000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"] # Or restrict to specific IPs
+  security_group_id = module.eks.cluster_primary_security_group_id
+  description       = "Allow custom port range 3000-32000"
 }

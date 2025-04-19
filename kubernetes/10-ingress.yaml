@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - easyshop.letsdeployit.com
+    - easyshop.allaboutdelight.store
     secretName: easyshop-tls-secret  # Cert-Manager will manage this
   rules:
-  - host: easyshop.letsdeployit.com
+  - host: easyshop.allaboutdelight.store
     http:
       paths:
       - path: /

@@ -48,19 +48,6 @@ sudo apt install -y postgresql-common postgresql -y
 sudo systemctl enable postgresql
 sudo systemctl start postgresql
 
-#Creating the user in postgres for sonarqube
-#NOTE: Need to create the password and add schema permission manually for this user after VM got provisioned.
-#since we are using the terraform script in the same repo, if we are using different repo and pipeline configured, we can pull from env or Vault
-#STEPS to create password && allow schema permission
-#1. sudo -u postgres psql  ## It will open the interactive terminal for postgresql
-#2. ALTER ROLE sonaruser WITH PASSWORD 'your_new_password';
-#3. \c sonarqube
-#4. GRANT ALL PRIVILEGES ON SCHEMA public TO sonaruser;
-#5. \q
-sudo -u postgres psql -c "CREATE USER sonaruser WITH LOGIN;"
-sudo -u postgres psql -c "CREATE DATABASE sonarqube OWNER sonaruser;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE sonarqube TO sonaruser;"
-
 #SONARQUBE INSTALLATION
 #Since Java already installed for Jenkins, no need to install Java
 #Few configuration changes need to change after VM got created. Look into Readme file

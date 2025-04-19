@@ -13,7 +13,7 @@ spec:
     - easyshop.tatanexarc.ai
     secretName: easyshop-tls-secret  # Cert-Manager will manage this
   rules:
-  - host: easyshop.tatanexarc.ai
+  - host: easyshop.letsdeployit.com
     http:
       paths:
       - path: /

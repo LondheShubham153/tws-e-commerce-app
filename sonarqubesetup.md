@@ -151,11 +151,12 @@ SonarQube requires specific configurations for optimal performance, including da
     fs.file-max=131072
     ```
     Save and close the file.
+   Within the above configuration:
+- `vm.max_map_count=524288`: Increases the number of memory maps Elasticsearch can use, allowing it to handle large datasets.
+- `fs.file-max=131072`: Increases the maximum number of files Elasticsearch can open, allowing it to run efficiently.
 
-    Within the above configuration:
-      -vm.max_map_count=524288: Increases the number of memory maps Elasticsearch can use, allowing it to handle large datasets.
-      -fs.file-max=131072: Increases the maximum number of files Elasticsearch can open, allowing it to run efficiently.
-    SonarQube uses Elasticsearch to store indices in a memory-mapped file system. Adjusting the system limits for virtual memory mapping and file handling ensures better stability and performance for SonarQube.
+SonarQube uses Elasticsearch to store indices in a memory-mapped file system. Adjusting the system limits for virtual memory mapping and file handling ensures better stability and performance for SonarQube.
+
 4. Create a new /etc/security/limits.d/99-sonarqube.conf file to create a resource limits configuration for SonarQube.
     ```bash
     sudo nano /etc/security/limits.d/99-sonarqube.conf

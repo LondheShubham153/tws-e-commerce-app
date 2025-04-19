@@ -3,12 +3,29 @@
 This guide provides step-by-step instructions for setting up a Jenkins CI/CD pipeline for the EasyShop application, including GitHub webhook configuration and shared library integration.
 
 ## Table of Contents
-- [Prerequisites](#prerequisites)
-- [Jenkins Installation](#jenkins-installation)
-- [Jenkins Configuration](#jenkins-configuration)
-- [GitHub Webhook Setup](#github-webhook-setup)
-- [Pipeline Configuration](#pipeline-configuration)
-- [Shared Library Integration](#shared-library-integration)
+- [Jenkins CI/CD Pipeline Setup Guide](#jenkins-cicd-pipeline-setup-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Jenkins Installation](#jenkins-installation)
+    - [Verify Jenkins Service](#verify-jenkins-service)
+    - [Start Jenkins (If Not Running)](#start-jenkins-if-not-running)
+    - [Access Jenkins in Browser](#access-jenkins-in-browser)
+  - [Jenkins Configuration](#jenkins-configuration)
+    - [1. Initial Setup](#1-initial-setup)
+    - [2. Required Plugins](#2-required-plugins)
+    - [3. Credentials Setup](#3-credentials-setup)
+    - [4. Email Notifications](#4-email-notifications)
+  - [GitHub Webhook Setup](#github-webhook-setup)
+    - [1. Generate GitHub Token](#1-generate-github-token)
+    - [2. Configure GitHub in Jenkins](#2-configure-github-in-jenkins)
+    - [3. Setup Webhook](#3-setup-webhook)
+    - [4. Configure SonarQube](#4-configure-sonarqube)
+  - [Pipeline Configuration](#pipeline-configuration)
+    - [1. Create Pipeline](#1-create-pipeline)
+    - [2. Shared Library Integration](#2-shared-library-integration)
+    - [3. Pipeline Stages](#3-pipeline-stages)
+    - [Logs Location](#logs-location)
+  - [References](#references)
 
 ## Prerequisites
 
@@ -46,6 +63,24 @@ sudo systemctl start jenkins
 sudo systemctl enable jenkins
 ```
 
+### Verify Jenkins Service
+First, check if the Jenkins service is running:
+
+```bash
+sudo systemctl status jenkins
+```
+
+### Start Jenkins (If Not Running)
+If Jenkins is not running, start it with:
+
+```bash
+sudo systemctl enable jenkins
+sudo systemctl restart jenkins
+```
+
+### Access Jenkins in Browser
+Open your browser and navigate to:
+
 ## Jenkins Configuration
 
 ### 1. Initial Setup
@@ -68,6 +103,7 @@ Install these plugins via "Manage Jenkins" > "Manage Plugins" > "Available":
 - Email Extension Plugin
 - GitHub Integration Plugin
 - Pipeline Utility Steps
+- SonarQube Scanner
 
 ### 3. Credentials Setup
 
@@ -118,6 +154,30 @@ Install these plugins via "Manage Jenkins" > "Manage Plugins" > "Available":
    - Content type: application/json
    - Select: Just the push event
 
+### 4. Configure SonarQube
+
+1. Make sure docker is Running
+   ```powershell
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   ```
+2. Run SonarQube
+   ```powershell
+   docker run -d -p 9000:9000 --name sonarqubesonarqube:lts-community
+   ```
+3. Default Passwords
+   ```powershell
+   username: admin
+   password: admin
+   ```
+4. Go to **Administration** and hover **Security** click on **Users**
+5. See the 3 dots beside the user, click them
+6. Create a Security Code and Copy it.
+7. Open Jenkins Credentials and create new **Secret Text**
+8. Copy it there with name of `sonarQubeToken`.
+
+If you want a full guide headover to my Blog: [Jenkins Integreation with SonarQube](https://iamabdullah.hashnode.dev/integrating-jenkins-with-sonarqube-masterclass)
+
 ## Pipeline Configuration
 
 ### 1. Create Pipeline
@@ -135,11 +195,11 @@ Install these plugins via "Manage Jenkins" > "Manage Plugins" > "Available":
 
 ### 2. Shared Library Integration
 
-Our pipeline uses a shared library from: [EasyShop Jenkins Shared Library](https://github.com/iemafzalhassan/EasyShop-jenkins-shared-lib)
+Our pipeline uses a shared library from: [EasyShop Jenkins Shared Library](https://github.com/Abdullah-0-3/sharedLibJenkins.git/)
 
 1. Go to "Manage Jenkins" > "Configure System"
 2. Under "Global Pipeline Libraries":
-   - Name: easyshop-shared-lib
+   - Name: jenkinsLibrary
    - Default version: main
    - Modern SCM: GitHub
    - Repository URL: https://github.com/iemafzalhassan/EasyShop-jenkins-shared-lib.git

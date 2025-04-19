@@ -1,0 +1,33 @@
+---
+# Common system tasks
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Upgrade all packages
+  apt:
+    upgrade: dist
+  when: ansible_os_family == "Debian"
+
+- name: Install common packages
+  package:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - unzip
+      - net-tools
+      - htop
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Set up timezone
+  timezone:
+    name: UTC

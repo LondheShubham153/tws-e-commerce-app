@@ -1,0 +1,15 @@
+---
+- name: DevOps Tools Installation
+  hosts: servers
+  become: yes
+
+  roles:
+    - common
+    - docker
+    - kubectl
+    - aws_cli
+    - helm
+    - argocd_cli
+    - java
+    - jenkins
+    - welcome

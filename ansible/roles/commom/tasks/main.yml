@@ -1,0 +1,10 @@
+- name: Update System
+  apt:
+    update_cache: yes
+
+- name: Update and Commom Tools
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"

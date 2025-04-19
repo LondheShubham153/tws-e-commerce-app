@@ -1,0 +1,62 @@
+---
+# Include Java role as Jenkins requires Java
+- name: Ensure Java is installed
+  include_role:
+    name: java
+
+- name: Check if Jenkins is installed
+  command: which jenkins
+  register: jenkins_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Install Jenkins
+  block:
+    - name: Download Jenkins repository key
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+        mode: '0644'
+
+    - name: Add Jenkins repository
+      lineinfile:
+        path: /etc/apt/sources.list.d/jenkins.list
+        line: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        create: yes
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Enable and start Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Wait for Jenkins to initialize
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        state: present
+        timeout: 300
+      ignore_errors: true
+      register: jenkins_wait
+
+    - name: Get Jenkins initial admin password
+      slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
+      when: jenkins_wait is success
+      ignore_errors: true
+
+    - name: Display Jenkins initial admin password
+      debug:
+        msg: "Jenkins initial admin password: {{ jenkins_password.content | b64decode | trim if jenkins_password is defined and jenkins_password.content is defined else 'Not available yet - check /var/lib/jenkins/secrets/initialAdminPassword' }}"
+      when: jenkins_wait is success
+  when: jenkins_exists.rc != 0

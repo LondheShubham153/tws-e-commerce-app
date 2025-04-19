@@ -1,0 +1,28 @@
+---
+- name: Check if ArgoCD CLI is installed
+  command: which argocd
+  register: argocd_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Install ArgoCD CLI
+  block:
+    - name: Download ArgoCD CLI
+      get_url:
+        url: https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+        dest: /tmp/argocd-linux-amd64
+        mode: '0555'
+
+    - name: Install ArgoCD CLI binary
+      become: true
+      copy:
+        src: /tmp/argocd-linux-amd64
+        dest: /usr/local/bin/argocd
+        mode: '0555'
+        remote_src: yes
+
+    - name: Clean up temporary ArgoCD CLI binary
+      file:
+        path: /tmp/argocd-linux-amd64
+        state: absent
+  when: argocd_exists.rc != 0

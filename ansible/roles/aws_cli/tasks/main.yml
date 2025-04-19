@@ -1,0 +1,34 @@
+---
+- name: Check if AWS CLI is installed
+  command: which aws
+  register: aws_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Install AWS CLI
+  block:
+    - name: Download AWS CLI
+      get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+        dest: /tmp/awscliv2.zip
+
+    - name: Unzip AWS CLI
+      unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: yes
+
+    - name: Install AWS CLI
+      become: true
+      command: /tmp/aws/install
+      args:
+        creates: /usr/local/bin/aws
+
+    - name: Clean up AWS CLI installation files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /tmp/aws
+        - /tmp/awscliv2.zip
+  when: aws_exists.rc != 0

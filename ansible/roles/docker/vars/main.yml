@@ -1,0 +1,19 @@
+---
+# Simplified Docker variables
+docker_prerequisites:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+
+# Architecture for Docker packages
+docker_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
+
+docker_users_to_group:
+  - ubuntu

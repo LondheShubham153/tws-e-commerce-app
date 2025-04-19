@@ -1,0 +1,43 @@
+---
+- name: Check if Java is installed
+  command: which java
+  register: java_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Get Java version if installed
+  shell: java -version 2>&1 | grep -i version | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1
+  register: java_version
+  ignore_errors: true
+  changed_when: false
+  when: java_exists.rc == 0
+
+- name: Install Java prerequisites
+  apt:
+    name: software-properties-common
+    state: present
+    update_cache: yes
+  when: java_exists.rc != 0 or (java_exists.rc == 0 and java_version.stdout|int < 17)
+
+- name: Add OpenJDK repository
+  apt_repository:
+    repo: ppa:openjdk-r/ppa
+    state: present
+  when: java_exists.rc != 0 or (java_exists.rc == 0 and java_version.stdout|int < 17)
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: java_exists.rc != 0 or (java_exists.rc == 0 and java_version.stdout|int < 17)
+
+- name: Install Java 17
+  apt:
+    name: openjdk-17-jdk
+    state: present
+  when: java_exists.rc != 0 or (java_exists.rc == 0 and java_version.stdout|int < 17)
+
+- name: Set Java 17 as default
+  alternatives:
+    name: java
+    path: /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+  when: java_exists.rc != 0 or (java_exists.rc == 0 and java_version.stdout|int < 17)

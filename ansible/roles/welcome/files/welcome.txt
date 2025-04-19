@@ -1,0 +1,53 @@
+=======================================================
+          WELCOME TO YOUR DEVOPS BASTION HOST
+=======================================================
+
+This bastion host has been configured with essential DevOps tools to help
+you manage your infrastructure and applications. Below is a summary of
+the installed tools and their primary uses:
+
+1. DOCKER
+   Purpose: Container runtime for building and running containerized applications
+   Basic usage: docker run, docker build, docker compose
+   Documentation: https://docs.docker.com/
+
+2. KUBECTL
+   Purpose: Command-line tool for controlling Kubernetes clusters
+   Basic usage: kubectl get, kubectl apply, kubectl describe
+   Documentation: https://kubernetes.io/docs/reference/kubectl/
+
+3. AWS CLI
+   Purpose: Command-line interface for interacting with AWS services
+   Basic usage: aws s3, aws ec2, aws eks
+   Documentation: https://docs.aws.amazon.com/cli/
+
+4. HELM
+   Purpose: Package manager for Kubernetes applications
+   Basic usage: helm install, helm upgrade, helm repo
+   Documentation: https://helm.sh/docs/
+
+5. ARGOCD CLI
+   Purpose: Command-line interface for ArgoCD GitOps tool
+   Basic usage: argocd app, argocd cluster, argocd repo
+   Documentation: https://argo-cd.readthedocs.io/en/stable/
+
+6. JENKINS
+   Purpose: Automation server for CI/CD pipelines
+   Access: http://localhost:8080
+   Initial Password: Check /var/lib/jenkins/secrets/initialAdminPassword
+   Dependencies: Java 17
+   Documentation: https://www.jenkins.io/doc/
+
+To get started:
+- All tools are available in your PATH
+- Shell completions have been set up for easier command usage
+- You may need to run 'source ~/.bashrc' to enable completions
+- Use '<tool-name> --help' for basic command information
+
+For version information, run the installation script again to display
+all installed tool versions.
+
+Remember to keep all tools updated regularly for security and new features.
+
+Happy DevOps Server - Ansible!
+=======================================================

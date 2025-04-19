@@ -1,124 +1,109 @@
-@Library('Shared') _
+@Library("jenkinsLibrary") _
 
 pipeline {
     agent any
     
     environment {
-        // Update the main app image name to match the deployment file
-        DOCKER_IMAGE_NAME = 'trainwithshubham/easyshop-app'
-        DOCKER_MIGRATION_IMAGE_NAME = 'trainwithshubham/easyshop-migration'
-        DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
-        GITHUB_CREDENTIALS = credentials('github-credentials')
-        GIT_BRANCH = "master"
+        SONAR_HOME = tool "sonarQubeScanner"
+        DOCKER_IMAGE = 'muhammadabdullahabrar/easyshop' 
+        DOCKER_MIGRATION_IMAGE = 'muhammadabdullahabrar/easyshop-migration' 
+        DOCKER_CREDENTIALS = "dockerHubCredentials"
+        EMAIL_ADDRESS = "abdullahabrar4843@gmail.com"
     }
     
     stages {
-        stage('Cleanup Workspace') {
+        stage("Set Build Tags") {
             steps {
                 script {
-                    clean_ws()
+                    env.DOCKER_TAG = "${BUILD_NUMBER}"
                 }
             }
         }
-        
-        stage('Clone Repository') {
+        stage("Clean Workspace") {
             steps {
-                script {
-                    clone("https://github.com/LondheShubham153/tws-e-commerce-app.git","master")
-                }
+                cleanWorkspace()
             }
         }
-        
-        stage('Build Docker Images') {
+        stage("Code Repository") {
+            steps {
+                cloneRepository(
+                    branch: "master",
+                    repoUrl: "https://github.com/Abdullah-0-3/tws-e-commerce-app.git"
+                )
+            }
+        }
+        stage("Trivy File System Scanning") {
+            steps {
+                trivyFileSystemScan()
+            }
+        }
+        stage("SonarQube Quality Analysis") {
+            steps {
+                sonarQubeAnalysis(
+                    sonarQubeTokenName: 'sonarQubeToken', 
+                    sonarQubeProjectKey: 'ecom', 
+                    sonarQubeProjectName: 'e-commerce', 
+                    sonarQubeInstallationName: 'sonarQubeScanner',
+                    sonarQubeScannerHome: "${SONAR_HOME}" 
+                )
+            }
+        }
+        stage("Docker Image Build") {
             parallel {
-                stage('Build Main App Image') {
+                stage("Build Main Docker Image") {
                     steps {
-                        script {
-                            docker_build(
-                                imageName: env.DOCKER_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                dockerfile: 'Dockerfile',
-                                context: '.'
-                            )
-                        }
+                        dockerBuild(
+                            imageName: env.DOCKER_IMAGE,
+                            imageTag: env.DOCKER_TAG
+                        )
                     }
                 }
-                
-                stage('Build Migration Image') {
+                stage("Build Migration Docker Image") {
                     steps {
-                        script {
-                            docker_build(
-                                imageName: env.DOCKER_MIGRATION_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                dockerfile: 'scripts/Dockerfile.migration',
-                                context: '.'
-                            )
-                        }
+                        dockerBuild(
+                            imageName: env.DOCKER_MIGRATION_IMAGE,
+                            imageTag: env.DOCKER_TAG,
+                            dockerfile: './scripts/Dockerfile.migration',
+                            context: '.'
+                        )
                     }
                 }
             }
         }
-        
-        stage('Run Unit Tests') {
+        stage("Trivy Image Scanning") {
             steps {
-                script {
-                    run_tests()
-                }
+                trivyImageScan(
+                    imageName: env.DOCKER_IMAGE, 
+                    imageTag: env.DOCKER_TAG
+                )
             }
         }
-        
-        stage('Security Scan with Trivy') {
-            steps {
-                script {
-                    // Create directory for results
-                  
-                    trivy_scan()
-                    
-                }
-            }
-        }
-        
-        stage('Push Docker Images') {
+        stage("Push Docker Image") {
             parallel {
-                stage('Push Main App Image') {
+                stage("Pushing Main Docker Image") {
                     steps {
-                        script {
-                            docker_push(
-                                imageName: env.DOCKER_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                credentials: 'docker-hub-credentials'
-                            )
-                        }
+                        dockerPush(
+                            imageName: env.DOCKER_IMAGE,
+                            imageTag: env.DOCKER_TAG,
+                            credentialsId: env.DOCKER_CREDENTIALS
+                        )
                     }
                 }
-                
-                stage('Push Migration Image') {
+                stage("Pushing Migration Docker Image") {
                     steps {
-                        script {
-                            docker_push(
-                                imageName: env.DOCKER_MIGRATION_IMAGE_NAME,
-                                imageTag: env.DOCKER_IMAGE_TAG,
-                                credentials: 'docker-hub-credentials'
-                            )
-                        }
+                        dockerPush(
+                            imageName: env.DOCKER_MIGRATION_IMAGE,
+                            imageTag: env.DOCKER_TAG,
+                            credentialsId: env.DOCKER_CREDENTIALS
+                        )
                     }
                 }
             }
         }
-        
-        // Add this new stage
-        stage('Update Kubernetes Manifests') {
-            steps {
-                script {
-                    update_k8s_manifests(
-                        imageTag: env.DOCKER_IMAGE_TAG,
-                        manifestsPath: 'kubernetes',
-                        gitCredentials: 'github-credentials',
-                        gitUserName: 'Jenkins CI',
-                        gitUserEmail: 'shubhamnath5@gmail.com'
-                    )
-                }
-            }
+    }
+    post {
+        always {
+            emailNotification(env.EMAIL_ADDRESS, ['trivy-image-report.txt', 'trivy-fs-report.txt'])
         }
     }
 }

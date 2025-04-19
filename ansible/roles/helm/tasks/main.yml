@@ -1,0 +1,26 @@
+---
+- name: Check if Helm is installed
+  command: which helm
+  register: helm_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Install Helm
+  block:
+    - name: Download Helm installer
+      get_url:
+        url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: '0700'
+
+    - name: Run Helm installer
+      become: true
+      command: /tmp/get_helm.sh
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Remove Helm installer script
+      file:
+        path: /tmp/get_helm.sh
+        state: absent
+  when: helm_exists.rc != 0

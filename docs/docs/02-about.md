@@ -22,7 +22,9 @@ EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, Type
 
 ## 🏗️ Architecture
 
-EasyShop follows a three-tier architecture pattern:
+EasyShop follows a modern three-tier architecture designed for scalability, maintainability, and performance.
+
+### Architecture Overview
 
 ### 1. Presentation Tier (Frontend)
 - Next.js React Components
@@ -45,6 +47,8 @@ EasyShop follows a three-tier architecture pattern:
 - Data Models
 - CRUD Operations
 - Data Validation
+
+## Architecture Diagram
 
 ```mermaid
 flowchart TD
@@ -101,6 +105,17 @@ flowchart TD
 5. Business logic handles data operations
 6. Mongoose ODM interacts with MongoDB
 7. Response flows back through the tiers
+
+## CI/CD Pipeline Integration
+
+The architecture is supported by a robust CI/CD pipeline:
+
+- **Jenkins** handles continuous integration with quality checks
+- **ArgoCD** manages continuous delivery to Kubernetes
+- **Docker** containerizes the application for consistent deployment
+- **AWS EKS** provides the managed Kubernetes environment
+
+This modern architecture ensures EasyShop is scalable, maintainable, and provides exceptional user experience.
 
 ## 🚀 Getting Started
 

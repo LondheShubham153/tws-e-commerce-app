@@ -1,4 +1,7 @@
-# Stage 1: Development/Build Stage
+# -----------------------------------------------------
+#                Stage 1 - Development
+# -----------------------------------------------------
+
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -19,7 +22,10 @@ COPY . .
 # Build the Next.js application
 RUN npm run build
 
-# Stage 2: Production Stage
+# -----------------------------------------------------
+#                Stage 2 - Production
+# -----------------------------------------------------
+
 FROM node:18-alpine AS runner
 
 # Set working directory

@@ -13,9 +13,13 @@ spec:
       labels:
         app: easyshop
     spec:
+      initContainers:
+        - name: wait-for-migration
+          image: mongo:5.0
+          command: ['sh', '-c', 'until mongo mongodb://mongodb-service:27017/easyshop --quiet --eval "printjson(db.getCollectionInfos())" | grep -q "products"; do echo "Waiting for migration to complete..."; sleep 5; done;']
       containers:
         - name: easyshop
-          image: trainwithshubham/easyshop-app:1
+          image: iemafzal/easyshop-app:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000

@@ -1,0 +1,10 @@
+---
+- name: Create welcome information file
+  copy:
+    src: welcome.txt
+    dest: "{{ ansible_env.HOME }}/welcome.txt"
+    mode: '0644'
+
+- name: Display welcome file location
+  debug:
+    msg: "Welcome file has been created at {{ ansible_env.HOME }}/welcome.txt"

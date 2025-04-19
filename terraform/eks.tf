@@ -51,12 +51,51 @@ module "eks" {
         Environment = "dev"
         ExtraTag = "e-commerce-app"
       }
+      # Attach security group rule for NodePort range (30000-32000)
+      security_group_ids = [module.eks.node_security_group_id]
+    }
+
+  jenkins-node-group = {
+    min_size     = 1
+    max_size     = 1
+    desired_size = 1
+
+    instance_types = ["t2.large"]
+    capacity_type  = "SPOT"
+    disk_size      = 50
+
+    labels = {
+      role = "jenkins"
+    }
+
+    taints = [
+      {
+        key    = "dedicated"
+        value  = "jenkins"
+        effect = "NO_SCHEDULE"
+      }
+    ]
+
+    tags = {
+      Name        = "jenkins-node"
+      Environment = "dev"
+      Purpose     = "ci"
     }
   }
+}
  
   tags = local.tags
 
+}
 
+resource "aws_security_group_rule" "allow_nodeport_range" {
+  type              = "ingress"
+  from_port         = 30000
+  to_port           = 32000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"] # Open to all IPs, restrict as needed
+  security_group_id = module.eks.node_security_group_id
+  description       = "Allow NodePort range 30000-32000 for NGINX Ingress"
 }
 
 data "aws_instances" "eks_nodes" {
@@ -68,6 +107,18 @@ data "aws_instances" "eks_nodes" {
     name   = "instance-state-name"
     values = ["running"]
   }
+
+  depends_on = [module.eks]
+}
+
+data "aws_eks_cluster" "eks" {
+  name = module.eks.cluster_name
+
+  depends_on = [module.eks]
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = module.eks.cluster_name
 
   depends_on = [module.eks]
 }

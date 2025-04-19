@@ -5,11 +5,12 @@ pipeline {
     
     environment {
         // Update the main app image name to match the deployment file
-        DOCKER_IMAGE_NAME = 'trainwithshubham/easyshop-app'
-        DOCKER_MIGRATION_IMAGE_NAME = 'trainwithshubham/easyshop-migration'
+        DOCKER_IMAGE_NAME = 'nikhathmirza/easyshop-app'
+        DOCKER_MIGRATION_IMAGE_NAME = 'nikhathmirza/easyshop-migration'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
         GITHUB_CREDENTIALS = credentials('github-credentials')
-        GIT_BRANCH = "master"
+        GIT_REPO = "https://github.com/mirzanikhath/tws-e-commerce-app.git"
+        GIT_BRANCH = "dev"
     }
     
     stages {
@@ -24,7 +25,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 script {
-                    clone("https://github.com/LondheShubham153/tws-e-commerce-app.git","master")
+                    clone("https://github.com/mirzanikhath/tws-e-commerce-app.git","dev")
                 }
             }
         }
@@ -62,7 +63,7 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                    run_tests()
+                     run_tests()
                 }
             }
         }
@@ -115,7 +116,7 @@ pipeline {
                         manifestsPath: 'kubernetes',
                         gitCredentials: 'github-credentials',
                         gitUserName: 'Jenkins CI',
-                        gitUserEmail: 'shubhamnath5@gmail.com'
+                        gitUserEmail: 'mirzanikhathsultana@gmail.com'
                     )
                 }
             }

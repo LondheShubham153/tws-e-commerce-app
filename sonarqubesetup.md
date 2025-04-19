@@ -1,7 +1,7 @@
-# SONARQUBE & POSTGRESQL SETUP FOR INCLUSING SONAR SCANNING IN YOUR JENKINS PIPELINE
+# SONARQUBE & POSTGRESQL SETUP FOR INCLUDING SONAR SCANNING IN YOUR JENKINS PIPELINE
 
 
-## PostgreSQL Setup for SonarQube on your Jenkins Server. You need to install sonar scanner plugin and configure it Jenkins UI. The following steps to be performed on the server.
+## PostgreSQL Setup for SonarQube on your Jenkins Server.
 
 Follow the steps below to set up a PostgreSQL database for SonarQube.
 
@@ -55,12 +55,10 @@ GRANT ALL PRIVILEGES ON SCHEMA public TO sonaruser;
 
 ## 7. Exit the PostgreSQL Console
 
-Exit the PostgreSQL database console.
-
 ```sql
 \q
 ```
-## After exiting from postgresql terminal, follow the below steps to change the postgres configuration
+## After exiting the PostgreSQL terminal
 
 ## 1. Open the PostgreSQL `postgresql.conf` file (usually located in `/etc/postgresql/<version>/main/postgresql.conf`
 
@@ -80,7 +78,7 @@ host    all             all             0.0.0.0/0            md5
 ```
 This allows all remote IP addresses to connect using password-based authentication.
 
-## 3. Reload PostgreSQL to apply changes:
+## 3. Reload PostgreSQL to apply changes
 ```bash
 sudo systemctl reload postgresql
 ```

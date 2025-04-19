@@ -122,21 +122,3 @@ data "aws_eks_cluster_auth" "eks" {
 
   depends_on = [module.eks]
 }
-
-resource "helm_release" "jenkins" {
-  name       = "jenkins"
-  namespace  = "jenkins"
-  repository = "https://charts.jenkins.io"
-  chart      = "jenkins"
-  version    = "5.0.9"
-  create_namespace = true
-
-  values = [
-    file("${path.module}/jenkins.yml")
-  ]
-  timeout     = 600       # 10 minutes
-  wait        = true
-  atomic      = true      # Roll back if it fails
-
-  depends_on = [module.eks]
-}

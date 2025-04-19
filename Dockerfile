@@ -26,8 +26,8 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Adding non root user & group for security and best practice
-RUN addgroup -g 1001 easyshop
-RUN adduser -u 1000 -G easyshop -s /bin/sh easyshop
+RUN addgroup easyshop
+RUN adduser -G easyshop -s /bin/sh easyshop
 
 # Copy necessary files from builder stage
 COPY --from=builder /app/.next/standalone ./

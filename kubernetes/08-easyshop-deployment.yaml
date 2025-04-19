@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: easyshop
-          image: ahamadb224/easyshop-app:29
+          image: ahamadb224/easyshop-app:30
           imagePullPolicy: Always
           ports:
             - containerPort: 3000

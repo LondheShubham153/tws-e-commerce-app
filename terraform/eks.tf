@@ -97,15 +97,6 @@ resource "aws_security_group_rule" "allow_nodeport_range" {
   security_group_id = module.eks.node_security_group_id
   description       = "Allow NodePort range 30000-32000 for NGINX Ingress"
 }
-resource "aws_security_group_rule" "allow_nodeport_range" {
-  type              = "ingress"
-  from_port         = 30000
-  to_port           = 32000
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"] # Open to all IPs, restrict as needed
-  security_group_id = module.eks.node_security_group_id
-  description       = "Allow NodePort range 30000-32000 for NGINX Ingress"
-}
 
 data "aws_instances" "eks_nodes" {
   instance_tags = {

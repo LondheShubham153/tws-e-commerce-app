@@ -1,239 +1,240 @@
-## 🚀 Getting Started
 
-### 🐳 Docker Setup Guide
+# 🛍️ EasyShop - Modern E-commerce Platform
 
-This guide will help you run **EasyShop** using Docker containers.  
-No local Node.js or MongoDB installation required!
+[![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-8.1.1-green?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Redux](https://img.shields.io/badge/Redux-2.2.1-purple?style=flat-square&logo=redux)](https://redux.js.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**EasyShop** is a modern, full-stack e-commerce platform built using Next.js, TypeScript, MongoDB, and Redux. It features a responsive UI, secure authentication, real-time cart updates, and a seamless shopping experience.
+
+## ✨ Features
+- 🎨 **Modern UI:** Responsive design with dark/light mode
+- 🔐 **Secure Authentication:** JWT-based authentication for user security
+- 🛒 **Real-time Cart:** Cart updates in real-time with Redux
+- 📱 **Mobile-First Design:** Fully responsive for all device sizes
+- 🔍 **Product Search & Filtering:** Easily find products through an intuitive search
+- 💳 **Secure Checkout:** Safe and smooth checkout process
+- 📦 **Categorized Products:** Browse products by categories
+- 👤 **User Profile:** User profiles with order history
 
 ---
 
-### ✅ Prerequisites
+## 🏗️ Architecture Overview
 
-- 🐳 [Docker](https://docs.docker.com/get-docker/) installed on your machine  
-- 💻 Basic understanding of terminal/command line
+### 1. Presentation Layer
+- **Next.js 14** (App Router)
+- **Redux** for state management
+- **Tailwind CSS** for styling
+
+### 2. Application Layer
+- **Next.js API Routes** for backend logic
+- **Authentication & Authorization** mechanisms
+- Business logic and error handling
+
+### 3. Data Layer
+- **MongoDB** for database management
+- **Mongoose** ODM for schema modeling
+
+![Architecture Diagram](architecture_diagram.png)
+![Flow Diagram](flow_diagram.png)
 
 ---
 
-### ⚙️ Step 1: Environment Setup
+## 🧰 Prerequisites
 
-Create a file named `.env.local` in the root directory with the following content:
+Ensure the following tools are installed:
+- Terraform
+- AWS CLI
+- kubectl
+- Docker
+- Helm
 
-```env
-# Database Configuration
-MONGODB_URI=mongodb://easyshop-mongodb:27017/easyshop
+---
 
-# NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-NEXTAUTH_SECRET=your-nextauth-secret-key
+## 🚀 Infrastructure Setup (Terraform + AWS)
 
-# JWT Configuration
-JWT_SECRET=your-jwt-secret-key
-```
-
-#### 🔐 To generate secure secret keys:
-
+### 1. Install Terraform
 ```bash
-# Generate NEXTAUTH_SECRET
-openssl rand -base64 32
-
-# Generate JWT_SECRET
-openssl rand -hex 32
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install terraform
 ```
 
----
-
-### 🚦 Step 2: Running the Application
-
-#### 🧩 Option 1: Using Docker Compose (Recommended)
-
+### 2. Install AWS CLI
 ```bash
-# Start all services
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop all services
-docker compose down
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt install unzip
+unzip awscliv2.zip
+sudo ./aws/install
+aws configure
 ```
 
----
-
-#### ⚙️ Option 2: Manual Docker Commands
-
-1. **Create a Docker network:**
-
+### 3. Clone the Repo
 ```bash
-docker network create easyshop-network
+git clone https://github.com/<your-username>/tws-e-commerce-app.git
+cd terraform
 ```
 
-2. **Start MongoDB:**
-
+### 4. Generate SSH Key for EC2 Access
 ```bash
-docker run -d   --name easyshop-mongodb   --network easyshop-network   -p 27017:27017   -v mongodb_data:/data/db   mongo:latest
+ssh-keygen -f terra-key
+chmod 400 terra-key
 ```
 
-3. **Build the main application:**
-
+### 5. Deploy Infrastructure
 ```bash
-docker build -t easyshop .
+terraform init
+terraform plan
+terraform apply
 ```
 
-4. **Build and run data migration:**
-
+### 6. SSH Into EC2
 ```bash
-# Build migration image
-docker build -t easyshop-migration -f scripts/Dockerfile.migration .
-
-# Run migration
-docker run --rm   --network easyshop-network   --env-file .env.local   easyshop-migration
+ssh -i terra-key ubuntu@<public-ip>
 ```
 
-5. **Start the EasyShop app:**
+---
 
+## ⚙️ Jenkins Setup (CI)
+
+### 1. Install Jenkins
 ```bash
-docker run -d   --name easyshop   --network easyshop-network   -p 3000:3000   --env-file .env.local   easyshop:latest
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+# Visit: http://<public-ip>:8080
 ```
 
----
-
-### 🌐 Accessing the Application
-
-> Open your browser and visit:  
-> [http://localhost:3000](http://localhost:3000)
-
-You should see the **EasyShop** homepage!
-
----
-
-### 🔍 Useful Docker Commands
-
+### 2. Get Jenkins Admin Password
 ```bash
-# View running containers
-docker ps
-
-# View logs
-docker logs easyshop
-docker logs easyshop-mongodb
-
-# Stop containers
-docker stop easyshop easyshop-mongodb
-
-# Remove containers
-docker rm easyshop easyshop-mongodb
-
-# Remove network
-docker network rm easyshop-network
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
+### 3. Install Plugins
+- Docker Pipeline
+- Pipeline View
+
+### 4. Add Global Credentials
+- GitHub (ID: github-credentials)
+- DockerHub (ID: docker-hub-credentials)
+
+### 5. Setup Shared Library
+- Path: Jenkins → Manage Jenkins → Configure System → Global Pipeline Libraries
+- Name: shared
+- Repo: https://github.com/<your-user>/jenkins-shared-libraries
+- Default Version: main
+
+### 6. Create Jenkins Pipeline
+- Name: EasyShop
+- Type: Pipeline
+- Use Pipeline Script from SCM
+- Git URL: https://github.com/<your-user>/tws-e-commerce-app
+- Credentials: github-credentials
+- Script Path: Jenkinsfile
+
+### 7. GitHub Webhook
+- Add webhook in GitHub to your Jenkins `/github-webhook/` endpoint
+
 ---
 
-## 🧪 Testing
+## 🚢 Argo CD Setup (CD)
 
-> ⚠️ _Coming soon: Unit tests and E2E tests using Jest and Cypress_
-
----
-
-## 🛠️ Troubleshooting
-
-### ⚠️ Dynamic Server Usage Warnings
-
+### 1. Configure AWS CLI & Kubeconfig on Bastion
 ```bash
-Error: Dynamic server usage: Page couldn't be rendered statically
+aws configure
+aws eks --region eu-west-1 update-kubeconfig --name tws-eks-cluster
 ```
 
-**Solution:**  
-This is expected for dynamic routes and API endpoints. These warnings won’t affect functionality.
-
----
-
-### ❌ MongoDB Connection Issues
-
+### 2. Install Argo CD
 ```bash
-Error: MongoDB connection failed
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+watch kubectl get pods -n argocd
 ```
 
-**Solutions:**
-
-- Ensure MongoDB is running
-- Verify MongoDB URI in `.env.local`
-- Test the connection using [MongoDB Compass](https://www.mongodb.com/products/compass)
-
----
-
-## 💡 Development Tips
-
-- Clear Next.js build cache:  
-  `rm -rf .next`
-- Run `npm install` after pulling changes
-- Use Node.js version **18+**
-- Double-check environment variables
-
----
-
-## 📦 Project Structure
-
+### 3. Patch ArgoCD Service to NodePort
 ```bash
-easyshop/
-├── src/
-│   ├── app/              # Next.js App Router pages
-│   ├── components/       # Reusable React components
-│   ├── lib/              # Utilities and config
-│   │   ├── auth/         # Authentication logic
-│   │   ├── db/           # MongoDB config
-│   │   └── features/     # Redux slices
-│   ├── types/            # TypeScript types
-│   └── styles/           # Global styles + Tailwind CSS
-├── public/               # Static assets
-└── scripts/              # Database migration scripts
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "NodePort"}}'
+kubectl get svc -n argocd
 ```
 
----
-
-## 🤝 Contributing
-
-We welcome contributions! Follow these steps:
-
+### 4. Access ArgoCD
 ```bash
-# 1. Fork the repository
-# 2. Create your branch
-git checkout -b feature/amazing-feature
-
-# 3. Make your changes
-# 4. Commit your changes
-git commit -m "Add amazing feature"
-
-# 5. Push your changes
-git push origin feature/amazing-feature
-
-# 6. Open a Pull Request 🎉
+kubectl port-forward svc/argocd-server -n argocd 8080:443 --address=0.0.0.0 &
+# Visit: https://<bastion-ip>:8080
 ```
 
-📌 _Check our **Contributing Guidelines** for more details_
+### 5. Get ArgoCD Admin Password
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
 
 ---
 
-## 📝 License
-
-This project is licensed under the **MIT License** – see the [LICENSE](./LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [MongoDB](https://www.mongodb.com/)
-- [Redux Toolkit](https://redux-toolkit.js.org/)
-- [Radix UI](https://www.radix-ui.com/)
+## 🌐 NGINX Ingress Setup
+```bash
+kubectl create namespace ingress-nginx
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm install nginx-ingress ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --set controller.service.type=LoadBalancer
+kubectl get svc -n ingress-nginx
+```
 
 ---
 
-## 📫 Contact
+## 🔐 Cert-Manager + HTTPS Setup
 
-For feedback or questions, open an issue or reach out:
+### 1. Install Cert-Manager
+```bash
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.12.0 \
+  --set installCRDs=true
+```
 
-**Made with ❤️ by [@sahastra16](https://github.com/sahastra16)**  
-🔗 Project: [https://github.com/sahastra16/tws-e-commerce-app](https://github.com/sahastra16/tws-e-commerce-app)  
-🔗 LinkedIn: [https://www.linkedin.com/in/sahastra/](https://www.linkedin.com/in/sahastra/)
+### 2. Configure DNS
+```bash
+kubectl get svc nginx-ingress-ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+Go to your DNS provider (e.g., GoDaddy) and create a CNAME or A record pointing to this hostname.
+
+---
+
+## 📦 Deploy to ArgoCD
+
+### 1. In Argo CD GUI:
+- Name: easyshop
+- Project: default
+- Sync Policy: Automatic
+
+### 2. Source Section:
+- Repo URL: https://github.com/<your-user>/tws-e-commerce-app
+- Path: Kubernetes
+
+### 3. Destination:
+- Cluster URL: https://kubernetes.default.svc
+- Namespace: easyshop
+
+Click "Create" and monitor deployment.
+
+---
+
+## ✅ Final Touch
+- Validate Ingress Route: Access the app via https://your-domain.com
+- Check TLS Certificates: Confirm that Cert-Manager is managing your HTTPS setup
+- ArgoCD Sync: Ensure ArgoCD reflects the current Git state
+
+---
+
+## 📃 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 💡 Contributing
+Contributions, issues, and feature requests are welcome! Feel free to fork the repository and submit a pull request.

@@ -78,6 +78,13 @@ resource "aws_security_group" "allow_user_to_connect" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    description = "port for email notification"
+    from_port   = 465
+    to_port     = 465
+    protocol    = "smtp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   tags = {
     Name = "mysecurity"

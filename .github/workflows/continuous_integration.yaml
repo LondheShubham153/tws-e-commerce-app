@@ -52,7 +52,7 @@ jobs:
             file: ./scripts/Dockerfile.migration
             push: true
             tags: |
-              ${{ env.DOCKER_USERNAME }}/easyshop-migration:${{ github.sha}}
+              ${{ env.DOCKER_USERNAME }}/easyshop-migration:${{ github.sha }}
             labels: |
               org.opencontainers.image.source=${{ github.repository }}
               org.opencontainers.image.revision=${{ github.sha }}
@@ -79,7 +79,7 @@ jobs:
             git config --local user.name "GitHub Action"
             
         - name: Pull latest changes from the remote branch
-          run: git pull origin master --rebase
+          run: git pull origin ${{ github.event.repository.default_branch }} --rebase
 
 
         - name: Update App image tag in manifest file
@@ -105,4 +105,4 @@ jobs:
           uses: ad-m/github-push-action@v0.6.0
           with: 
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            branch: master
+            branch: ${{ github.event.repository.default_branch }}

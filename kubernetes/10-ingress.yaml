@@ -13,7 +13,7 @@ spec:
     - easyshop.allaboutdelight.store
     secretName: easyshop-tls-secret  # Cert-Manager will manage this
   rules:
-  - host: allaboutdelight.store
+  - host: easyshop.allaboutdelight.store
     http:
       paths:
       - path: /

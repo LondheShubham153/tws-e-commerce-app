@@ -45,7 +45,9 @@ module "eks" {
       capacity_type  = "SPOT"
 
       disk_size = 35 
-      use_custom_launch_template = false  # Important to apply disk size!
+      use_custom_launch_template = true  # Important to apply disk size!
+      launch_template_name_prefix = "tws-demo-ng-"
+      launch_template_version     = "$Latest"
 
       tags = {
         Name = "tws-demo-ng"

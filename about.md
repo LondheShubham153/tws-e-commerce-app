@@ -1,5 +1,5 @@
 
-# 🛍️ EasyShop eCommerce - About
+# 🛍️ EasyShop eCommerce 
 
 EasyShop is a modern eCommerce platform built using the latest web technologies and deployed using a full DevOps workflow.
 

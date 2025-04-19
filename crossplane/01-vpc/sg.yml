@@ -1,0 +1,118 @@
+---
+# This file contains the configuration for the security group and its rules.
+# It defines a security group for the easyshop application and sets up rules for HTTP, HTTPS, and SSH access.
+# The security group is associated with a specific VPC and region.
+# The rules specify the allowed inbound and outbound traffic for the security group.
+# The security group is created in the "crossplane-system" namespace.
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroup
+metadata:
+  name: easyshop-sg
+  namespace: crossplane-system
+spec:
+  forProvider:
+    description: Security group for easyshop
+    region: eu-west-1
+    vpcIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: easyshop-vpc
+    tags:
+      Name: easyshop-sg
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: easyshop-sg-http
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    type: ingress
+    fromPort: 80
+    toPort: 80
+    protocol: tcp
+    cidrBlocks:
+      - 0.0.0.0/0
+    securityGroupIdRef:
+      name: easyshop-sg
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: easyshop-sg-https
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    type: ingress
+    fromPort: 443
+    toPort: 443
+    protocol: tcp
+    cidrBlocks:
+      - 0.0.0.0/0
+    securityGroupIdRef:
+      name: easyshop-sg
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: easyshop-sg-ssh
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    type: ingress
+    fromPort: 22
+    toPort: 22
+    protocol: tcp
+    cidrBlocks:
+      - 0.0.0.0/0
+    securityGroupIdRef:
+      name: easyshop-sg
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: easyshop-sg-ssh-ingress
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    type: ingress
+    fromPort: 3000
+    toPort: 3000
+    protocol: tcp
+    cidrBlocks:
+      - 0.0.0.0/0
+    securityGroupIdRef:
+      name: easyshop-sg
+  providerConfigRef:
+    name: default
+---
+apiVersion: ec2.aws.upbound.io/v1beta1
+kind: SecurityGroupRule
+metadata:
+  name: easyshop-sg-ssh-egress
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    type: egress
+    fromPort: 0
+    toPort: 0
+    protocol: "-1"
+    cidrBlocks:
+      - 0.0.0.0/0
+    securityGroupIdRef:
+      name: easyshop-sg
+  providerConfigRef:
+    name: default
+

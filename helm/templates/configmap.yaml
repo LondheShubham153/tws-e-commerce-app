@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.app.name }}-config
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    {{- include "easyshop.labels" . | nindent 4 }}
+data:
+  MONGODB_URI: {{ .Values.config.mongodb.uri | quote }}
+  NODE_ENV: {{ .Values.config.nodeEnv | quote }}
+  NEXT_PUBLIC_API_URL: {{ .Values.config.publicApiUrl | quote }}
+  NEXTAUTH_URL: {{ .Values.config.nextAuthUrl | quote }}

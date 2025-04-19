@@ -1,0 +1,29 @@
+---
+apiVersion: eks.aws.upbound.io/v1beta2
+kind: NodeGroup
+metadata:
+  name: easyshop-eks-nodegroup
+  namespace: crossplane-system
+spec:
+  forProvider:
+    region: eu-west-1
+    clusterNameRef:
+      name: easyshop-eks-cluster
+    nodeRoleArnRef:
+      name: eks-node-role
+    subnetIdRefs:
+      - name: easyshop-private-subnet
+    scalingConfig:
+      desiredSize: 2
+      maxSize: 3
+      minSize: 1
+    instanceTypes:
+      - t2.large
+    amiType: AL2_x86_64
+    diskSize: 20
+    tags:
+      Name: easyshop-eks-nodegroup
+  providerConfigRef:
+    name: default
+  deletionPolicy: Delete
+

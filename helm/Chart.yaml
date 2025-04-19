@@ -1,0 +1,13 @@
+apiVersion: v2
+name: easyshop
+description: A Helm chart for deploying the EasyShop e-commerce application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ecommerce
+  - nextjs
+  - mongodb
+maintainers:
+  - name: EasyShop Team
+    email: team@easyshop.com

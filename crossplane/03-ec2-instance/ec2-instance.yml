@@ -1,0 +1,20 @@
+---
+apiVersion: ec2.aws.upbound.io/v1beta2
+kind: Instance
+metadata:
+  name: easyshop-instance
+  namespace: crossplane-system
+spec:
+  forProvider:
+    ami: ami-0df368112825f8d8f # Amazon Linux 2 AMI (example)
+    instanceType: t2.micro
+    keyName: crossplane-keypair
+    region: eu-west-1
+    subnetId: subnet-0893a7291ca1863a6
+    associatePublicIpAddress: true
+    vpcSecurityGroupIdRefs:
+      - name: easyshop-sg
+    tags:
+      Name: easyshop-instance
+  providerConfigRef:
+    name: default

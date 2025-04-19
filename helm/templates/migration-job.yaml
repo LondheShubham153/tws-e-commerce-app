@@ -1,0 +1,35 @@
+{{- if .Values.dbMigration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.app.name }}-migration
+  namespace: {{ .Values.app.namespace }}
+  labels:
+    {{- include "easyshop.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+      - name: migration
+        image: "{{ .Values.dbMigration.image.repository }}:{{ .Values.dbMigration.image.tag }}"
+        imagePullPolicy: {{ .Values.dbMigration.image.pullPolicy }}
+        env:
+          - name: MONGODB_URI
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Values.app.name }}-config
+                key: MONGODB_URI
+          - name: NODE_ENV
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Values.app.name }}-config
+                key: NODE_ENV
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: regcred
+  backoffLimit: 3
+{{- end }}

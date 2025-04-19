@@ -1,0 +1,32 @@
+# Patterns to ignore when building packages.
+# This supports shell glob matching, relative path matching, and
+# negation (prefixed with !). Only one pattern per line.
+.DS_Store
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.git/
+.gitignore
+.project
+.idea/
+.vscode/
+*.tgz
+node_modules/
+.env*
+*.log
+coverage/
+dist/
+.next/
+.cache/
+tmp/
+__tests__/
+**/*.test.*
+**/*.spec.*
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+README.md
+LICENSE
+*.md

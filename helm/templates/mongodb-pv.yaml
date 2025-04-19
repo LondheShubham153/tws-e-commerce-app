@@ -1,0 +1,17 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.app.name }}-mongodb-pv
+  namespace: {{ .Values.app.namespace }}
+spec:
+  capacity:
+    storage: {{ .Values.mongodb.persistence.size }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: "/mnt/data/mongodb"
+    type: DirectoryOrCreate
+{{- end }}

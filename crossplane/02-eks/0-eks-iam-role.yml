@@ -1,0 +1,30 @@
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: Role
+metadata:
+  name: easyshop-eks-cluster-role
+  namespace: crossplane-system
+spec:
+  forProvider:
+    assumeRolePolicy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "eks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+---
+apiVersion: iam.aws.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: easyshop-eks-cluster-role-amazon-eks-cluster-policy
+spec:
+  forProvider:
+    role: easyshop-eks-cluster-role
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSClusterPolicy

@@ -62,7 +62,9 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                    run_tests()
+                    docker.image("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}").inside {
+                        sh  'npm install'
+                        sh  'npm test'
                 }
             }
         }

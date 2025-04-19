@@ -1,44 +1,84 @@
 #!/bin/bash
+set -e
 
-# Update system and install core packages
-sudo apt update
-sudo apt install -y fontconfig openjdk-17-jre 
+# Update system packages
+apt-get update
+apt-get upgrade -y
 
-# Jenkins installation
-sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
-  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc]" \
-  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
-  /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt-get update
-sudo apt-get -y install jenkins
+# Install basic tools
+apt-get install -y \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg \
+  lsb-release \
+  unzip \
+  jq \
+  python3-pip \
+  wget \
+  git \
+  software-properties-common
 
-sudo systemctl start jenkins
-sudo systemctl enable jenkins
+# Install AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+./aws/install
+rm -rf aws awscliv2.zip
 
-# Docker installation
-sudo apt-get update
-sudo apt-get install docker.io -y
+# Install Docker with proper permissions
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo \
+  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update
+apt-get install -y docker-ce docker-ce-cli containerd.io
+systemctl enable docker
+systemctl start docker
 
-# User group permission
-sudo usermod -aG docker $USER
-sudo usermod -aG docker jenkins
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+mv kubectl /usr/local/bin/
 
-sudo systemctl restart docker
-sudo systemctl restart jenkins
+# Install HashiCorp Vault client
+curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
+apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+apt-get update
+apt-get install -y vault
 
-# Install dependencies and Trivy
-sudo apt-get install wget apt-transport-https gnupg lsb-release snapd -y
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
-sudo apt-get update -y
-sudo apt-get install trivy -y
+# System hardening
+# Create a non-root user for applications
+useradd -m -s /bin/bash appuser
 
-# AWS CLI installation
-sudo snap install aws-cli --classic
+# Secure SSH configuration
+echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+systemctl restart sshd
 
-# Helm installation
-sudo snap install helm --classic
+# Configure system limits
+echo "* soft nofile 65536" >> /etc/security/limits.conf
+echo "* hard nofile 65536" >> /etc/security/limits.conf
 
-# Kubectl installation
-sudo snap install kubectl --classic
+# Secure shared memory
+echo "tmpfs /run/shm tmpfs defaults,noexec,nosuid 0 0" >> /etc/fstab
+
+# Enable UFW (Uncomplicated Firewall) and configure rules
+apt-get install -y ufw
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow ssh
+ufw allow http
+ufw allow https
+ufw --force enable
+
+# Install audit daemon for better logging
+apt-get install -y auditd
+systemctl enable auditd
+systemctl start auditd
+
+# Clean up
+apt-get clean
+rm -rf /var/lib/apt/lists/*
+
+echo "Installation and hardening complete!" 

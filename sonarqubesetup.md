@@ -1,5 +1,7 @@
+# SONARQUBE & POSTGRESQL SETUP FOR INCLUSING SONAR SCANNING IN YOUR JENKINS PIPELINE
 
-# PostgreSQL Setup for SonarQube on your Jenkins Server. You need to install sonar scanner plugin and configure it Jenkins UI. The following steps to be performed on the server.
+
+## PostgreSQL Setup for SonarQube on your Jenkins Server. You need to install sonar scanner plugin and configure it Jenkins UI. The following steps to be performed on the server.
 
 Follow the steps below to set up a PostgreSQL database for SonarQube.
 
@@ -151,8 +153,8 @@ SonarQube requires specific configurations for optimal performance, including da
     Save and close the file.
 
     Within the above configuration:
-       • vm.max_map_count=524288: Increases the number of memory maps Elasticsearch can use, allowing it to handle large datasets.
-       •	fs.file-max=131072: Increases the maximum number of files Elasticsearch can open, allowing it to run efficiently.
+       * vm.max_map_count=524288: Increases the number of memory maps Elasticsearch can use, allowing it to handle large datasets.
+       * fs.file-max=131072: Increases the maximum number of files Elasticsearch can open, allowing it to run efficiently.
     SonarQube uses Elasticsearch to store indices in a memory-mapped file system. Adjusting the system limits for virtual memory mapping and file handling ensures better stability and performance for SonarQube.
 3. Create a new /etc/security/limits.d/99-sonarqube.conf file to create a resource limits configuration for SonarQube.
     ```bash
@@ -167,8 +169,8 @@ SonarQube requires specific configurations for optimal performance, including da
     ```
     Save and close the file.
     Within the configuration:
-      •	nofile=131072: Increases the number of open file descriptors, allowing SonarQube to handle large workloads.
-      •	nproc=8192: Raises the process limit to prevent failures under high concurrency.
+      * nofile=131072: Increases the number of open file descriptors, allowing SonarQube to handle large workloads.
+      *	nproc=8192: Raises the process limit to prevent failures under high concurrency.
 
 ---
 

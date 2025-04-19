@@ -28,7 +28,7 @@ pipeline {
         stage("Code Repository") {
             steps {
                 git credentialsId: "${GITHUB_CREDENTIALS}",
-                    branch: "master",
+                    branch: "second-Go",
                     url: "https://github.com/DV-boop/e-commerce-app.git"
             }
         }

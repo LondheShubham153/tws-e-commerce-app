@@ -1,4 +1,4 @@
-# 🛍️ EasyShop - Modern E-commerce Platform
+# 🛍️ EasyShop - Modern E-commerce Platform.
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)

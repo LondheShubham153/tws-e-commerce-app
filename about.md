@@ -1,4 +1,4 @@
-# 🛍️ EasyShop - Modern E-commerce Platform + DevOps Deployment
+# 🛍️ EasyShop - Modern E-commerce Platform
 
 [![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -6,24 +6,45 @@
 [![Redux](https://img.shields.io/badge/Redux-2.2.1-purple?style=flat-square&logo=redux)](https://redux.js.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, TypeScript, MongoDB, and deployed with a production-ready DevOps stack featuring Jenkins, Terraform, ArgoCD, and Kubernetes (EKS).
+EasyShop is a modern, full-stack e-commerce platform built with Next.js 14, TypeScript, and MongoDB. It features a beautiful UI with Tailwind CSS, secure authentication, real-time cart updates, and a seamless shopping experience.
 
----
+## ✨ Features
 
-## ✨ Frontend Features
+- 🎨 Modern and responsive UI with dark mode support
+- 🔐 Secure JWT-based authentication
+- 🛒 Real-time cart management with Redux
+- 📱 Mobile-first design approach
+- 🔍 Advanced product search and filtering
+- 💳 Secure checkout process
+- 📦 Multiple product categories
+- 👤 User profiles and order history
+- 🌙 Dark/Light theme support
 
-- 🎨 Modern UI with Tailwind CSS
-- 🔐 Secure JWT-based Auth (NextAuth)
-- 🛒 Real-time Redux-powered Cart
-- 🔍 Product Search & Filters
-- 📱 Mobile-first & Dark Mode
-- 💳 Secure Checkout
-- 👤 User Profiles & Order History
+## 🏗️ Architecture
 
+EasyShop follows a three-tier architecture pattern:
 
+### 1. Presentation Tier (Frontend)
+- Next.js React Components
+- Redux for State Management
+- Tailwind CSS for Styling
+- Client-side Routing
+- Responsive UI Components
 
-```markdown
-## ⚙️ DevOps Architecture (Production)
+### 2. Application Tier (Backend)
+- Next.js API Routes
+- Business Logic
+- Authentication & Authorization
+- Request Validation
+- Error Handling
+- Data Processing
+
+### 3. Data Tier (Database)
+- MongoDB Database
+- Mongoose ODM
+- Data Models
+- CRUD Operations
+- Data Validation
 
 ```mermaid
 graph LR
@@ -33,88 +54,3 @@ graph LR
   D --> E[EKS Cluster]
   E --> F[EasyShop App]
   E --> G["Prometheus + Grafana"]
-
-
-🔧 Tools & Stack
-Terraform – Infra as Code for Jenkins, EKS, IAM, VPC
-
-Jenkins – CI for builds and GitOps updates
-
-ArgoCD – GitOps-based CD to Kubernetes
-
-Helm – Prometheus + Grafana monitoring
-
-EKS – Highly available Kubernetes cluster
-
-🚀 CI/CD + Monitoring Setup
-1. Terraform: Provision Jenkins + EKS
-cd terraform/
-terraform init && terraform apply
-2. Jenkins CI Pipeline
-Pulls code
-
-Builds Docker image
-
-Updates manifest in Git
-
-Pushes to ArgoCD Git repo
-
-3. ArgoCD (CD)
-kubectl create ns argocd
-kubectl apply -n argocd -f kubernetes/argocd/install.yaml
-
-4. Monitoring with Prometheus + Grafana
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
-
-🔍 Summary of Deployment Challenges & Fixes
-1. Jenkins Node Offline
-Cause: Resource constraints (disk/swap/temp)
-
-Fix: Increased disk space, enabled swap, restarted agent
-
-2. Git Push Failures from Jenkins
-Cause: Missing credentials, unset GIT_BRANCH
-
-Fix: Injected credentials, verified remote + HEAD
-
-3. Hardcoded sed in Manifest
-Fix: Switched to a generic regex for image replacement
-
-4. ArgoCD Sync Drift
-Fix: Verified Git commits before sync, improved manifest update logic
-
-💡 Learnings & Recommendations
-✅ Use SHA/image tags over latest
-
-🧪 Build Jenkins Shared Lib test harness
-
-📈 Monitor Jenkins resource health
-
-🔁 Prefer GitOps-first CI/CD: Jenkins → Git → ArgoCD → K8s
-
-📦 Frontend Project Structure
-csharp
-Copy
-Edit
-easyshop/
-├── src/
-│   ├── app/              # Next.js App Router pages
-│   ├── components/       # Reusable React components
-│   ├── lib/              # Auth, DB, Redux
-│   ├── types/            # TypeScript types
-│   └── styles/           # Tailwind + global styles
-├── public/              # Static assets
-└── scripts/             # Migration, Docker, etc.
-🐳 Local Development via Docker
-bash
-Copy
-Edit
-docker compose up -d
-# Or manual steps (see original README above)
-📫 Contact
-Created & Maintained by Kedar
-→ LinkedIn: linkedin.com/in/your-profile
-→ Project: GitHub Repo
-
-<div align="center"> <p>Made with ❤️ by Kedar — Empowering DevOps & Digital Commerce</p> </div> ```

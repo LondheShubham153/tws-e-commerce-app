@@ -170,8 +170,8 @@ SonarQube uses Elasticsearch to store indices in a memory-mapped file system. Ad
     ```
     Save and close the file.
     Within the configuration:
-      * nofile=131072: Increases the number of open file descriptors, allowing SonarQube to handle large workloads.
-      *	nproc=8192: Raises the process limit to prevent failures under high concurrency.
+      * `nofile=131072`: Increases the number of open file descriptors, allowing SonarQube to handle large workloads.
+      *	`nproc=8192`: Raises the process limit to prevent failures under high concurrency.
 
 ---
 

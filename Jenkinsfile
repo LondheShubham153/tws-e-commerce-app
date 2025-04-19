@@ -137,4 +137,13 @@ pipeline {
             }
         }
     }
+    post {
+        always {
+            emailext body: "Build Status: ${currentBuild.result}\nBuild URL: ${currentBuild.absoluteUrl}\n\nCheck the attached log for details.",
+                     subject: '[Jenkins] Job ${JOB_NAME} (${BUILD_NUMBER}) - ${BUILD_STATUS}',
+                     to: 'baig.khadeer@gmail.com',
+                     attachLog: true,
+                     mimeType: 'text/plain'
+        }
+    }
 }

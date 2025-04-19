@@ -123,7 +123,7 @@ jobs:
             git push
           else
             echo "No changes to commit"
-          fi  4
+          fi
 
       - name: Install kubectl
         run: |

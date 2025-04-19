@@ -54,11 +54,48 @@ module "eks" {
       # Attach security group rule for NodePort range (30000-32000)
       security_group_ids = [module.eks.node_security_group_id]
     }
+
+  jenkins-node-group = {
+    min_size     = 1
+    max_size     = 1
+    desired_size = 1
+
+    instance_types = ["t2.large"]
+    capacity_type  = "SPOT"
+    disk_size      = 50
+
+    labels = {
+      role = "jenkins"
+    }
+
+    taints = [
+      {
+        key    = "dedicated"
+        value  = "jenkins"
+        effect = "NO_SCHEDULE"
+      }
+    ]
+
+    tags = {
+      Name        = "jenkins-node"
+      Environment = "dev"
+      Purpose     = "ci"
+    }
   }
+}
  
   tags = local.tags
 
+}
 
+resource "aws_security_group_rule" "allow_nodeport_range" {
+  type              = "ingress"
+  from_port         = 30000
+  to_port           = 32000
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"] # Open to all IPs, restrict as needed
+  security_group_id = module.eks.node_security_group_id
+  description       = "Allow NodePort range 30000-32000 for NGINX Ingress"
 }
 resource "aws_security_group_rule" "allow_nodeport_range" {
   type              = "ingress"

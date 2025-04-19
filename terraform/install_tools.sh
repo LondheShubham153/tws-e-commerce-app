@@ -52,7 +52,7 @@ sudo systemctl start postgresql
 #Since Java already installed for Jenkins, no need to install Java
 #Few configuration changes need to change after VM got created. Look into Readme file
 sudo apt update
-sudo apt install unzip
+sudo apt install unzip -y
 sudo wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-25.2.0.102705.zip
 unzip sonarqube-25.2.0.102705.zip
 sudo mv sonarqube-25.2.0.102705/ /opt/sonarqube

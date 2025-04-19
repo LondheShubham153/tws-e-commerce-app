@@ -63,9 +63,8 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                    docker.image("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}").inside {
-                        sh  'npm install'
-                        sh  'npm test'
+                     sh 'npm install --legacy-peer-deps'
+                     sh 'npm test'
                 }
             }
         }

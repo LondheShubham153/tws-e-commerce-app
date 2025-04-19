@@ -1,0 +1,108 @@
+name: tws-e-commerce-app Pipeline
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write 
+
+jobs: 
+    continuous_integration:
+      runs-on: ubuntu-latest
+      env:
+          DOCKER_USERNAME: joakim077
+          
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
+
+        - name: Unit testing
+          run: |
+            echo "Unit testing"
+
+        - name: Code Coverage
+          run: | 
+            echo "Code Coverage and upload artifact"
+
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v2
+  
+        - name: Log in to Docker Hub
+          uses: docker/login-action@v2
+          with:
+            username: ${{ env.DOCKER_USERNAME }}
+            password: ${{ secrets.DOCKER_PASSWORD }}
+
+        - name: Build and push App image
+          uses: docker/build-push-action@v4
+          with:
+            push: true
+            tags: |
+              ${{ env.DOCKER_USERNAME }}/easyshop-app:${{ github.sha }}
+            labels: |
+              org.opencontainers.image.source=${{ github.repository }}
+              org.opencontainers.image.revision=${{ github.sha }}
+        
+        - name: Build and push Migration Image
+          uses: docker/build-push-action@v4
+          with:
+            file: ./scripts/Dockerfile.migration
+            push: true
+            tags: |
+              ${{ env.DOCKER_USERNAME }}/easyshop-migration:${{ github.sha }}
+            labels: |
+              org.opencontainers.image.source=${{ github.repository }}
+              org.opencontainers.image.revision=${{ github.sha }}
+        
+        - name: Run Trivy vulnerability scan
+          uses: aquasecurity/trivy-action@0.30.0
+          with:
+            image-ref: '${{ env.DOCKER_USERNAME }}/easyshop-app:${{ github.sha }}'
+            format: 'table'
+            exit-code: 0
+            severity: 'CRITICAL,HIGH'
+            output: 'trivy-results.txt'
+      
+        - name: Upload Trivy scan results 
+          uses: actions/upload-artifact@v4
+          with:
+            name: trivy_result_app
+            path: ./trivy-results.txt
+            retention-days: 7
+
+        - name: Configure git for the action
+          run: |
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            
+        - name: Pull latest changes from the remote branch
+          run: git pull origin ${{ github.event.repository.default_branch }} --rebase
+
+
+        - name: Update App image tag in manifest file
+          uses: Charlyzzz/update-k8s-image@v1.7.1
+          with:
+            manifest-path: kubernetes/08-easyshop-deployment.yaml
+            new-image-tag: ${{ github.sha }}
+            container-name: easyshop
+
+        - name: Update Migration image tag in manifest file
+          uses: Charlyzzz/update-k8s-image@v1.7.1
+          with:
+            manifest-path: kubernetes/12-migration-job.yaml
+            new-image-tag: ${{ github.sha }}
+            container-name: migration
+
+        - name: Commit deploy manifest on local repo
+          run: |
+            git add kubernetes
+            git commit -s -m "[skip actions]"
+
+        - name: Push manifests to remote repo
+          uses: ad-m/github-push-action@v0.6.0
+          with: 
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            branch: ${{ github.event.repository.default_branch }}

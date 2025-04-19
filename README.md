@@ -284,7 +284,39 @@ aws eks update-kubeconfig --region eu-west-1 --name tws-eks-cluster
 * This command maps your EKS cluster with your Bastion server.
 * It helps to communicate with EKS components.
 
-**10. Argo CD Setup**<br/>
+**10. Enable dynamic EBS volume provisioning for MongoDB by setting up the EBS CSI Driver**
+
+Associate oidc provider
+
+```bash
+  eksctl utils associate-iam-oidc-provider \
+      --region eu-west-1 \
+      --cluster tws-eks-cluster \
+      --approve
+```
+
+Create IAM role for service account
+```bash
+  eksctl create iamserviceaccount \
+      --name ebs-csi-controller-sa \
+      --namespace kube-system \
+      --cluster tws-eks-cluster \
+      --role-name AmazonEKS_EBS_CSI_DriverRole \
+      --role-only \
+      --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+      --approve
+```
+Get ARN of IAM Role
+```bash
+  ARN=$(aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole --query 'Role.Arn' --output text)
+```
+Deploy EBS CSI Driver (Add on)
+```bash
+  eksctl create addon --cluster tws-eks-cluster --name aws-ebs-csi-driver --version latest \
+      --service-account-role-arn $ARN --force
+```
+
+**11. Argo CD Setup**<br/>
 Create a Namespace for Argo CD<br/>
 ```bash
 kubectl create namespace argocd

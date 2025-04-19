@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: easyshop
-          image: trainwithshubham/easyshop-app:1
+          image: joakim077/easyshop-app:eeb496a9e27830d27c685ad4b15647670e8f8876
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -42,11 +42,11 @@ spec:
                   key: JWT_SECRET
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: 256Mi
+              cpu: 200m
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: 512Mi
+              cpu: 500m
           startupProbe:
             httpGet:
               path: /

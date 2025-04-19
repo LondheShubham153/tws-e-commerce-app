@@ -1,0 +1,255 @@
+@Library('Shared') _
+
+pipeline {
+    agent any
+    
+    environment {
+        // Update the main app image name to match the deployment file
+        DOCKER_IMAGE_NAME = 'trainwithshubham/easyshop-app'
+        DOCKER_MIGRATION_IMAGE_NAME = 'trainwithshubham/easyshop-migration'
+        DOCKER_IMAGE_TAG = "${env.BRANCH_NAME == 'production' ? 'production' : env.BRANCH_NAME == 'staging' ? 'staging' : BUILD_NUMBER}"
+        GITHUB_CREDENTIALS = credentials('github-credentials')
+        GIT_BRANCH = "${env.BRANCH_NAME ?: 'master'}"
+        DEPLOY_ENVIRONMENT = "${env.BRANCH_NAME == 'production' ? 'prod' : env.BRANCH_NAME == 'staging' ? 'staging' : 'dev'}"
+        SLACK_CHANNEL = 'easyshop-deployments'
+    }
+    
+    options {
+        timeout(time: 1, unit: 'HOURS')
+        ansiColor('xterm')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+    
+    stages {
+        stage('Cleanup Workspace') {
+            steps {
+                script {
+                    clean_ws()
+                }
+            }
+        }
+        
+        stage('Clone Repository') {
+            steps {
+                script {
+                    clone("https://github.com/LondheShubham153/tws-e-commerce-app.git", env.GIT_BRANCH)
+                }
+            }
+        }
+        
+        stage('Static Code Analysis') {
+            steps {
+                script {
+                    echo "Running static code analysis"
+                    // Uncomment when SonarQube is configured
+                    // withSonarQubeEnv('SonarQube') {
+                    //     sh 'npm install -g sonarqube-scanner'
+                    //     sh 'sonar-scanner'
+                    // }
+                }
+            }
+        }
+        
+        stage('Run Unit Tests') {
+            steps {
+                script {
+                    run_tests()
+                }
+            }
+            post {
+                always {
+                    junit 'reports/junit/*.xml'
+                }
+            }
+        }
+        
+        stage('Build Docker Images') {
+            parallel {
+                stage('Build Main App Image') {
+                    steps {
+                        script {
+                            docker_build(
+                                imageName: env.DOCKER_IMAGE_NAME,
+                                imageTag: env.DOCKER_IMAGE_TAG,
+                                dockerfile: 'docker/Dockerfile',
+                                context: '.'
+                            )
+                        }
+                    }
+                }
+                
+                stage('Build Migration Image') {
+                    steps {
+                        script {
+                            docker_build(
+                                imageName: env.DOCKER_MIGRATION_IMAGE_NAME,
+                                imageTag: env.DOCKER_IMAGE_TAG,
+                                dockerfile: 'scripts/Dockerfile.migration',
+                                context: '.'
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Security Scan with Trivy') {
+            steps {
+                script {
+                    trivy_scan(
+                        imageName: env.DOCKER_IMAGE_NAME,
+                        imageTag: env.DOCKER_IMAGE_TAG,
+                        severity: 'HIGH,CRITICAL',
+                        reportPath: 'trivy-reports'
+                    )
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-reports/*.json', allowEmptyArchive: true
+                }
+                failure {
+                    slackSend(channel: env.SLACK_CHANNEL, color: 'danger', message: "Security vulnerabilities found in build ${env.BUILD_NUMBER}. Check the report at ${env.BUILD_URL}")
+                }
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
+                script {
+                    echo "Checking quality gate status"
+                    // Uncomment when SonarQube is configured
+                    // timeout(time: 5, unit: 'MINUTES') {
+                    //     def qg = waitForQualityGate()
+                    //     if (qg.status != 'OK') {
+                    //         error "Quality gate failed: ${qg.status}"
+                    //     }
+                    // }
+                }
+            }
+        }
+        
+        stage('Push Docker Images') {
+            parallel {
+                stage('Push Main App Image') {
+                    steps {
+                        script {
+                            docker_push(
+                                imageName: env.DOCKER_IMAGE_NAME,
+                                imageTag: env.DOCKER_IMAGE_TAG,
+                                credentials: 'docker-hub-credentials'
+                            )
+                            
+                            // If this is a branch deployment, also tag it as latest for that environment
+                            if (env.BRANCH_NAME == 'production' || env.BRANCH_NAME == 'staging' || env.BRANCH_NAME == 'master') {
+                                docker_tag_and_push(
+                                    sourceImage: "${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}",
+                                    targetImage: "${env.DOCKER_IMAGE_NAME}:${env.DEPLOY_ENVIRONMENT}-latest",
+                                    credentials: 'docker-hub-credentials'
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                stage('Push Migration Image') {
+                    steps {
+                        script {
+                            docker_push(
+                                imageName: env.DOCKER_MIGRATION_IMAGE_NAME,
+                                imageTag: env.DOCKER_IMAGE_TAG,
+                                credentials: 'docker-hub-credentials'
+                            )
+                            
+                            // If this is a branch deployment, also tag it as latest for that environment
+                            if (env.BRANCH_NAME == 'production' || env.BRANCH_NAME == 'staging' || env.BRANCH_NAME == 'master') {
+                                docker_tag_and_push(
+                                    sourceImage: "${env.DOCKER_MIGRATION_IMAGE_NAME}:${env.DOCKER_IMAGE_TAG}",
+                                    targetImage: "${env.DOCKER_MIGRATION_IMAGE_NAME}:${env.DEPLOY_ENVIRONMENT}-latest",
+                                    credentials: 'docker-hub-credentials'
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Update Kubernetes Manifests') {
+            steps {
+                script {
+                    update_k8s_manifests(
+                        imageTag: env.DOCKER_IMAGE_TAG,
+                        manifestsPath: "kubernetes/${env.DEPLOY_ENVIRONMENT}",
+                        gitCredentials: 'github-credentials',
+                        gitUserName: 'Jenkins CI',
+                        gitUserEmail: 'shubhamnath5@gmail.com'
+                    )
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            when {
+                expression { env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'staging' || env.GIT_BRANCH == 'production' }
+            }
+            steps {
+                script {
+                    // Using ArgoCD for GitOps-based deployment
+                    sh "argocd app sync easyshop-${env.DEPLOY_ENVIRONMENT} --async"
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            when {
+                expression { env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'staging' || env.GIT_BRANCH == 'production' }
+            }
+            steps {
+                script {
+                    // Wait for deployment to be ready
+                    sh "kubectl rollout status deployment/easyshop -n easyshop-${env.DEPLOY_ENVIRONMENT} --timeout=300s"
+                    
+                    // Run integration tests against the deployment
+                    echo "Running integration tests against ${env.DEPLOY_ENVIRONMENT} environment"
+                    
+                    // Check endpoint health
+                    sh "curl -f http://easyshop.${env.DEPLOY_ENVIRONMENT}.example.com/api/health || exit 1"
+                }
+            }
+            post {
+                failure {
+                    script {
+                        // Automatic rollback on failure
+                        echo "Deployment verification failed, rolling back to previous version"
+                        sh "kubectl rollout undo deployment/easyshop -n easyshop-${env.DEPLOY_ENVIRONMENT}"
+                        
+                        // Notify about rollback
+                        slackSend(channel: env.SLACK_CHANNEL, color: 'danger', 
+                            message: "Deployment to ${env.DEPLOY_ENVIRONMENT} failed and was rolled back. Check logs at ${env.BUILD_URL}")
+                    }
+                }
+                success {
+                    slackSend(channel: env.SLACK_CHANNEL, color: 'good', 
+                        message: "Successfully deployed EasyShop ${env.DOCKER_IMAGE_TAG} to ${env.DEPLOY_ENVIRONMENT}")
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs(cleanWhenNotBuilt: true,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true)
+        }
+        success {
+            slackSend(channel: env.SLACK_CHANNEL, color: 'good', 
+                message: "Build #${env.BUILD_NUMBER} of ${env.JOB_NAME} was successful! :tada:")
+        }
+        failure {
+            slackSend(channel: env.SLACK_CHANNEL, color: 'danger', 
+                message: "Build #${env.BUILD_NUMBER} of ${env.JOB_NAME} failed! :boom:")
+        }
+    }
+} 

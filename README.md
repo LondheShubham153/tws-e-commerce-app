@@ -38,7 +38,8 @@
 - **Mongoose** ODM for schema modeling
 
 ![Architecture Diagram](architecture_diagram.png)
-![Flow Diagram](flow_diagram.png)
+
+![architecture_diagram](https://github.com/user-attachments/assets/88573b56-1ffc-493e-b6c6-4063aba888fe)
 
 ---
 

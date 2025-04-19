@@ -72,7 +72,7 @@ Uncomment it and change it to
 listen_addresses = '*' or  listen_addresses = 'your_ip'
 ```
 
-## 2. Locate the `pg_hba.conf` file. It’s usually in the same directory as `postgresql.conf`. Typical location is `•	/etc/postgresql/<version>/main/pg_hba.conf`
+## 2. Locate the `pg_hba.conf` file. It’s usually in the same directory as `postgresql.conf`. Typical location is `	/etc/postgresql/<version>/main/pg_hba.conf`
 
 add the following line to allow connections from any IP address (replace 0.0.0.0/0 with a more specific range if needed):
 ```bash

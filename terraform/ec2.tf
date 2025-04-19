@@ -101,7 +101,7 @@ resource "aws_instance" "testinstance" {
     Name = "Jenkins-Automate"
   }
   root_block_device {
-    volume_size = 20
+    volume_size = 35
     volume_type = "gp3"
   }
   

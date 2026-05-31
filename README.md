@@ -144,7 +144,7 @@ aws configure
 ```
 
 ```bash
-aws eks --region eu-west-1 update-kubeconfig --name tws-eks-cluster
+aws eks --region eu-north-1 update-kubeconfig --name tws-eks-cluster
 ```
 9. **Check your cluster:**
 ```bash
@@ -279,7 +279,7 @@ Add your Access Key and Secret Key when prompted.
 **9. Update Kubeconfig for EKS**<br/>
 Run the following important command:
 ```bash
-aws eks update-kubeconfig --region eu-west-1 --name tws-eks-cluster
+aws eks update-kubeconfig --region eu-north-1 --name tws-eks-cluster
 ```
 * This command maps your EKS cluster with your Bastion server.
 * It helps to communicate with EKS components.

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: easyshop-service
+  namespace: easyshop
+spec:
+  selector:
+    app: easyshop   # Use the appropriate label to match your pod
+  ports:
+    - protocol: TCP
+      port: 80       # Port in the service
+      targetPort: 3000 # Port in the pod
+  type: ClusterIP

@@ -1,0 +1,3 @@
+secrets:
+  jwtSecret: "Ij0pygJbOPRcus7WBAWvDTiFbmmGDX/y2nDtgSmu+UY="
+  nextauthSecret: "816de388e513a740be88462d2eee655faa588bf623e827692aff2f928ad23c76"

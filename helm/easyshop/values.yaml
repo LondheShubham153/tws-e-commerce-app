@@ -12,7 +12,7 @@ service:
 config:
   mongodbUri: mongodb://mongodb-service:27017/easyshop
   nodeEnv: production
-  apiUrl: https//18.226.67.249.nip.io:3000/api
+  apiUrl: https://18.226.67.249.nip.io:3000/api
   nextauthUrl: https://18.226.67.249.nip.io:3000
 
 secrets:

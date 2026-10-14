@@ -16,6 +16,7 @@ config:
   nextauthUrl: https://18.226.67.249.nip.io:3000
 
 secrets:
+  create: false
   jwtSecret: ""
   nextauthSecret: ""
 

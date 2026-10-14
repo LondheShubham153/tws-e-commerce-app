@@ -1,4 +1,3 @@
-{{- if .Values.migration.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -19,4 +18,3 @@ spec:
                 configMapKeyRef:
                   name: easyshop-config
                   key: MONGODB_URI
-{{- end }}

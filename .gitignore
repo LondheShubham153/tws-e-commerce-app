@@ -96,3 +96,4 @@ terra-keyhelm/easyshop/values-private.yaml
 secrets.yaml
 *.tgz
 helm/easyshop/values-secrets.yaml
+helm/easyshop/values-private.yaml

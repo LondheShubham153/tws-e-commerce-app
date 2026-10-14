@@ -7,8 +7,7 @@ spec:
     storage: {{ .Values.mongodb.storage | quote }}
   accessModes:
     - ReadWriteOnce
-  storageClassName: ""
+  storageClassName: "manual"
   hostPath:
     path: {{ .Values.mongodb.hostPath | quote }}
-    type: DirectoryOrCreate
   persistentVolumeReclaimPolicy: Retain

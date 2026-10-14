@@ -92,4 +92,8 @@ terraform.tfstate.backup
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terra-key.pub
-terra-key
+terra-keyhelm/easyshop/values-private.yaml
+secrets.yaml
+*.tgz
+helm/easyshop/values-secrets.yaml
+helm/easyshop/values-private.yaml

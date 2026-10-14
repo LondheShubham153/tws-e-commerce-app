@@ -1,0 +1,42 @@
+replicaCount: 2
+image:
+  repository: manishvishwa801/easyshop-dhi
+  tag: "1"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  nodePort: 30080
+
+config:
+  mongodbUri: mongodb://mongodb-service:27017/easyshop
+  nodeEnv: production
+  apiUrl: https://18.226.67.249.nip.io:3000/api
+  nextauthUrl: https://18.226.67.249.nip.io:3000
+
+secrets:
+  create: false
+  jwtSecret: ""
+  nextauthSecret: ""
+
+mongodb:
+  image: mongo:7.0
+  storage: 2Gi
+  hostPath: /data/mongodb
+
+ingress:
+  enabled: true
+  className: nginx
+  host: 18.226.67.249.nip.io
+tlsSecretName: easyshop-tls-secret
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+migration:
+  enabled: true
+  image: manishvishwa801/easyshop-migration:1
